@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
                 ('anti_snipe_seconds', models.IntegerField(default=300, help_text='Seconds to extend if bid placed near end')),
                 ('auto_relist', models.BooleanField(default=False)),
                 ('view_count', models.IntegerField(default=0)),
-                ('is_active', models.BooleanField(default=True)),
+
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('category', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='listings', to='categories.category')),

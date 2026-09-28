@@ -13,7 +13,7 @@ class ListingAttributeInline(admin.TabularInline):
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
     list_display = ['title', 'seller', 'listing_type', 'status', 'current_price', 'quantity', 'available_stock', 'created_at']
-    list_filter = ['listing_type', 'status', 'condition', 'category', 'is_active']
+    list_filter = ['listing_type', 'status', 'condition', 'category']
     search_fields = ['title', 'slug', 'seller__email', 'description']
     prepopulated_fields = {'slug': ('title',)}
     readonly_fields = ['view_count', 'created_at', 'updated_at']
@@ -25,7 +25,7 @@ class ListingAdmin(admin.ModelAdmin):
             'fields': ('seller', 'title', 'slug', 'description', 'category', 'condition')
         }),
         ('Listing Type & Status', {
-            'fields': ('listing_type', 'status', 'is_active')
+            'fields': ('listing_type', 'status')
         }),
         ('Quantity Management', {
             'fields': ('quantity', 'available_stock', 'auction_quantity', 'quantity_sold')

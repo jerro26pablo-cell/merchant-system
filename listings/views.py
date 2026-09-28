@@ -9,8 +9,7 @@ from .forms import ListingForm, ListingImageFormSet
 def listing_catalog(request):
     """Catalog-style view of all active listings"""
     listings = Listing.objects.filter(
-        status='active',
-        is_active=True
+        status='active'
     ).select_related('seller', 'category').prefetch_related('images').order_by('-created_at')
     
     # Search functionality
@@ -62,7 +61,7 @@ def listing_catalog(request):
     return render(request, 'listings/catalog.html', context)
 
 def listing_detail(request, slug):
-    listing = get_object_or_404(Listing, slug=slug, is_active=True)
+    listing = get_object_or_404(Listing, slug=slug, status='active')
     
     # Track view
     listing.add_view(
@@ -73,8 +72,7 @@ def listing_detail(request, slug):
     # Get similar listings
     similar_listings = Listing.objects.filter(
         category=listing.category,
-        status='active',
-        is_active=True
+        status='active'
     ).exclude(id=listing.id)[:4]
     
     context = {

@@ -69,7 +69,6 @@ class Listing(models.Model):
     original_listing = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='relistings')
     inventory_source = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='auction_conversions', help_text=_('Original buy-now listing if this is an auction created from inventory'))
     
-    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
