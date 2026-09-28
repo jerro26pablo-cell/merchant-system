@@ -78,50 +78,57 @@ import logging
 db_logger = logging.getLogger(__name__)
 db_logger.info(f"DATABASE_URL environment variable: {'SET' if database_url else 'NOT SET'}")
 
+valid_database_config = False
+
 if database_url:
     # Parse DATABASE_URL using dj-database-url
     try:
-        DATABASES = {
-            'default': dj_database_url.config(
-                default=database_url,
-                conn_max_age=600,
-                conn_health_checks=True
-            )
-        }
-        db_logger.info(f"Database configured from DATABASE_URL")
-        db_logger.info(f"Database host: {DATABASES['default'].get('HOST', 'NOT SET')}")
-        db_logger.info(f"Database name: {DATABASES['default'].get('NAME', 'NOT SET')}")
+        parsed_config = dj_database_url.parse(database_url)
+        db_host = parsed_config.get('HOST')
         
-        # Validate the parsed configuration (log warning instead of failing)
-        db_host = DATABASES['default'].get('HOST')
-        if not db_host or db_host in ['hostname', 'localhost', '127.0.0.1']:
-            if 'RENDER' in os.environ:
-                db_logger.warning(f"Potentially invalid database host for Render: {db_host}")
-                db_logger.warning("This may indicate DATABASE_URL is not properly configured")
+        db_logger.info(f"Parsed DATABASE_URL - Host: {db_host}, Name: {parsed_config.get('NAME')}")
         
+        # Check if the host is valid (not a placeholder)
+        if db_host and db_host not in ['hostname', 'localhost', '127.0.0.1', '']:
+            DATABASES = {
+                'default': dj_database_url.config(
+                    default=database_url,
+                    conn_max_age=600,
+                    conn_health_checks=True
+                )
+            }
+            valid_database_config = True
+            db_logger.info(f"Database configured from DATABASE_URL with valid host: {db_host}")
+        else:
+            db_logger.warning(f"DATABASE_URL contains invalid host: {db_host}")
+            db_logger.warning("Skipping DATABASE_URL and trying fallback configuration")
+            
     except Exception as e:
         db_logger.error(f"Error parsing DATABASE_URL: {e}")
-        # Don't fail completely, try fallback
-        db_logger.warning("Falling back to environment variable configuration")
-        database_url = None
+        db_logger.warning("Skipping DATABASE_URL and trying fallback configuration")
         
-if not database_url:
+if not valid_database_config:
     # Fallback configuration (for Render individual env vars or local dev)
     if 'RENDER' in os.environ:
         # Try Render-specific environment variables
         db_logger.info("Attempting Render-specific database configuration")
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': os.environ.get('DB_NAME', 'django_merchant'),
-                'USER': os.environ.get('DB_USER', 'postgres'),
-                'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-                'HOST': os.environ.get('DB_HOST', 'localhost'),
-                'PORT': os.environ.get('DB_PORT', '5432'),
+        db_host = os.environ.get('DB_HOST', '')
+        
+        if db_host and db_host not in ['hostname', 'localhost', '127.0.0.1', '']:
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.postgresql',
+                    'NAME': os.environ.get('DB_NAME', 'django_merchant'),
+                    'USER': os.environ.get('DB_USER', 'postgres'),
+                    'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+                    'HOST': db_host,
+                    'PORT': os.environ.get('DB_PORT', '5432'),
+                }
             }
-        }
-        db_logger.info(f"Database configured from Render environment variables")
-        db_logger.info(f"Database host: {DATABASES['default']['HOST']}")
+            valid_database_config = True
+            db_logger.info(f"Database configured from Render environment variables with host: {db_host}")
+        else:
+            db_logger.warning(f"Render DB_HOST is also invalid: {db_host}")
     else:
         # Local development configuration
         db_logger.warning("DATABASE_URL not set, using local development configuration")
@@ -135,8 +142,20 @@ if not database_url:
                 'PORT': config('DB_PORT', default='5432'),
             }
         }
+        valid_database_config = True
         db_logger.info(f"Database configured for local development")
-        db_logger.info(f"Database host: {DATABASES['default']['HOST']}")
+
+# If we still don't have a valid database config, use SQLite as emergency fallback
+if not valid_database_config:
+    db_logger.error("No valid database configuration found, using SQLite as emergency fallback")
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+    valid_database_config = True
+    db_logger.warning("Application will use SQLite - this is not suitable for production!")
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
