@@ -70,11 +70,12 @@ ASGI_APPLICATION = 'config.asgi.application'
 
 # Database configuration
 # Priority: DATABASE_URL env var > Individual DB env vars > Local config
-if 'DATABASE_URL' in os.environ:
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
     # Parse DATABASE_URL using dj-database-url
     DATABASES = {
         'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL'),
+            default=database_url,
             conn_max_age=600,
             conn_health_checks=True
         )
