@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from categories.models import Category, SizeSpecification
 
 User = get_user_model()
