@@ -72,17 +72,41 @@ ASGI_APPLICATION = 'config.asgi.application'
 # Database configuration
 # Priority: DATABASE_URL env var > Individual DB env vars > Local config
 database_url = os.environ.get('DATABASE_URL')
+
+# Log database configuration for debugging
+import logging
+db_logger = logging.getLogger(__name__)
+db_logger.info(f"DATABASE_URL environment variable: {'SET' if database_url else 'NOT SET'}")
+
+# On Render, always require DATABASE_URL
+if 'RENDER' in os.environ and not database_url:
+    db_logger.error("Running on Render but DATABASE_URL is not set!")
+    raise ValueError("DATABASE_URL must be set when running on Render")
+
 if database_url:
     # Parse DATABASE_URL using dj-database-url
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=database_url,
-            conn_max_age=600,
-            conn_health_checks=True
-        )
-    }
+    try:
+        DATABASES = {
+            'default': dj_database_url.config(
+                default=database_url,
+                conn_max_age=600,
+                conn_health_checks=True
+            )
+        }
+        db_logger.info(f"Database configured from DATABASE_URL")
+        db_logger.info(f"Database host: {DATABASES['default'].get('HOST', 'NOT SET')}")
+        db_logger.info(f"Database name: {DATABASES['default'].get('NAME', 'NOT SET')}")
+        
+        # Validate the parsed configuration
+        if not DATABASES['default'].get('HOST') or DATABASES['default'].get('HOST') == 'hostname':
+            raise ValueError(f"Invalid database host: {DATABASES['default'].get('HOST')}")
+            
+    except Exception as e:
+        db_logger.error(f"Error parsing DATABASE_URL: {e}")
+        raise
 else:
     # Local development configuration (or fallback)
+    db_logger.warning("DATABASE_URL not set, using local development configuration")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -93,6 +117,8 @@ else:
             'PORT': config('DB_PORT', default='5432'),
         }
     }
+    db_logger.info(f"Database configured for local development")
+    db_logger.info(f"Database host: {DATABASES['default']['HOST']}")
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

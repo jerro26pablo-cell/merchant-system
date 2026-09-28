@@ -12,21 +12,35 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.stdout.write('Checking database configuration and connectivity...')
         
-        # Check environment variables
-        self.stdout.write('\n=== Environment Variables ===')
+        # Check all environment variables
+        self.stdout.write('\n=== All Environment Variables ===')
+        all_env = {k: v for k, v in os.environ.items() if 'DB' in k.upper() or 'DATABASE' in k.upper()}
+        for key, value in sorted(all_env.items()):
+            if 'PASSWORD' in key or 'SECRET' in key:
+                self.stdout.write(f'{key}: {"*" * len(value)}')
+            else:
+                self.stdout.write(f'{key}: {value}')
+        
+        # Check specific DATABASE_URL
+        self.stdout.write('\n=== DATABASE_URL Details ===')
         db_url = os.environ.get('DATABASE_URL')
         if db_url:
-            self.stdout.write(f'DATABASE_URL: {"*" * (len(db_url) - 10)}{db_url[-10:]}')  # Show last 10 chars
+            self.stdout.write(f'DATABASE_URL: {"*" * (len(db_url) - 20)}{db_url[-20:]}')  # Show last 20 chars
+            # Try to parse and show components
+            try:
+                import dj_database_url
+                parsed = dj_database_url.parse(db_url)
+                self.stdout.write(f'Parsed ENGINE: {parsed.get("ENGINE")}')
+                self.stdout.write(f'Parsed NAME: {parsed.get("NAME")}')
+                self.stdout.write(f'Parsed USER: {parsed.get("USER")}')
+                self.stdout.write(f'Parsed HOST: {parsed.get("HOST")}')
+                self.stdout.write(f'Parsed PORT: {parsed.get("PORT")}')
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Error parsing DATABASE_URL: {e}'))
         else:
-            self.stdout.write('DATABASE_URL: NOT SET')
+            self.stdout.write(self.style.ERROR('DATABASE_URL: NOT SET'))
         
         self.stdout.write(f'RENDER: {"SET" if "RENDER" in os.environ else "NOT SET"}')
-        
-        if 'RENDER' in os.environ:
-            self.stdout.write(f'DB_HOST: {os.environ.get("DB_HOST", "NOT SET")}')
-            self.stdout.write(f'DB_NAME: {os.environ.get("DB_NAME", "NOT SET")}')
-            self.stdout.write(f'DB_USER: {os.environ.get("DB_USER", "NOT SET")}')
-            self.stdout.write(f'DB_PORT: {os.environ.get("DB_PORT", "NOT SET")}')
         
         # Check Django database configuration
         self.stdout.write('\n=== Django Database Configuration ===')
