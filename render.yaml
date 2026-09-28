@@ -1,7 +1,8 @@
 services:
   - type: web
-    name: merchant-system
+    name: online-merchant
     env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn config.wsgi --log-file -
     envVars:
@@ -15,3 +16,9 @@ services:
           property: connectionString
       - key: ALLOWED_HOSTS
         value: "*.onrender.com"
+        sync: false
+
+databases:
+  - name: online_merchant-db
+    databaseName: online_merchant_db
+    user: online_merchant_db_user
