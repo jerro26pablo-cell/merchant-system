@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Categories - Django Merchant{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">Browse Categories</h1>
+        <p class="lead">Find what you're looking for</p>
+    </div>
+</div>
+
+<div class="row">
+    {% for category in categories %}
+        <div class="col-md-4 col-lg-3 mb-4">
+            <div class="category-card">
+                <div class="category-icon">
+                    <i class="bi bi-grid"></i>
+                </div>
+                <h4>{{ category.name }}</h4>
+                <p class="text-muted">{{ category.description|truncatewords:10 }}</p>
+                <a href="{% url 'category_detail' category.slug %}" class="btn btn-outline-primary">Browse</a>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h4>No categories available</h4>
+                <p>Check back later for new categories.</p>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

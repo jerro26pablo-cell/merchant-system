@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Django Merchant{% endblock %}
+
+{% block content %}
+<div class="row mb-5">
+    <div class="col-12 text-center">
+        <h1 class="display-4">Welcome to Django Merchant</h1>
+        <p class="lead">Your complete e-commerce auction platform</p>
+        <div class="mt-4">
+            <a href="{% url 'catalog' %}" class="btn btn-primary btn-lg me-2">Browse Catalog</a>
+            <a href="{% url 'category_list' %}" class="btn btn-outline-primary btn-lg">View Categories</a>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">Featured Categories</h2>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="category-icon">
+                    <i class="bi bi-laptop"></i>
+                </div>
+                <h4>Electronics</h4>
+                <p class="text-muted">Latest gadgets and devices</p>
+                <a href="{% url 'catalog' %}" class="btn btn-outline-primary">Browse</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="category-icon">
+                    <i class="bi bi-tshirt"></i>
+                </div>
+                <h4>Clothing</h4>
+                <p class="text-muted">Fashion for everyone</p>
+                <a href="{% url 'catalog' %}" class="btn btn-outline-primary">Browse</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="category-icon">
+                    <i class="bi bi-house"></i>
+                </div>
+                <h4>Home & Garden</h4>
+                <p class="text-muted">Everything for your home</p>
+                <a href="{% url 'catalog' %}" class="btn btn-outline-primary">Browse</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">How It Works</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="category-icon">
+                    <i class="bi bi-person-plus"></i>
+                </div>
+                <h4>1. Register</h4>
+                <p>Create your free account in seconds</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="category-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+                <h4>2. Browse</h4>
+                <p>Find amazing deals in our catalog</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="category-icon">
+                    <i class="bi bi-cart"></i>
+                </div>
+                <h4>3. Buy or Bid</h4>
+                <p>Purchase instantly or bid in auctions</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

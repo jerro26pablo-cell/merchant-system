@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - Django Merchant{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title mb-4">My Profile</h2>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Username:</strong> {{ user.username }}</p>
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        <p><strong>First Name:</strong> {{ user.first_name }}</p>
+                        <p><strong>Last Name:</strong> {{ user.last_name }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> {{ user.get_status_display }}</p>
+                        <p><strong>Seller Mode:</strong> 
+                            {% if user.seller_enabled %}
+                                <span class="badge bg-success">Enabled</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Disabled</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Email Verified:</strong> 
+                            {% if user.email_verified %}
+                                <span class="badge bg-success">Yes</span>
+                            {% else %}
+                                <span class="badge bg-warning">No</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if not user.seller_enabled %}
+                    <a href="{% url 'enable_seller_mode' %}" class="btn btn-primary">Enable Seller Mode</a>
+                {% else %}
+                    <a href="{% url 'seller_profile' %}" class="btn btn-primary">Edit Seller Profile</a>
+                    <a href="{% url 'seller_dashboard' %}" class="btn btn-secondary">Seller Dashboard</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

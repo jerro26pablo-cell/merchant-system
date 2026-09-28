@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Catalog - Django Merchant{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">Product Catalog</h1>
+        <p class="lead">Browse our amazing collection of products</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Filters Sidebar -->
+    <div class="col-lg-3 mb-4">
+        <div class="filter-section">
+            <h5 class="mb-3">Filters</h5>
+            
+            <form method="GET" action="{% url 'catalog' %}">
+                <div class="mb-3">
+                    <label class="form-label">Search</label>
+                    <input type="text" class="form-control" name="search" value="{{ search_query }}" placeholder="Search products...">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Listing Type</label>
+                    <select class="form-select" name="type">
+                        <option value="">All Types</option>
+                        <option value="auction" {% if listing_type == 'auction' %}selected{% endif %}>Auction</option>
+                        <option value="buy_now" {% if listing_type == 'buy_now' %}selected{% endif %}>Buy Now</option>
+                        <option value="both" {% if listing_type == 'both' %}selected{% endif %}>Both</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Condition</label>
+                    <select class="form-select" name="condition">
+                        <option value="">All Conditions</option>
+                        <option value="new" {% if condition == 'new' %}selected{% endif %}>New</option>
+                        <option value="like_new" {% if condition == 'like_new' %}selected{% endif %}>Like New</option>
+                        <option value="good" {% if condition == 'good' %}selected{% endif %}>Good</option>
+                        <option value="fair" {% if condition == 'fair' %}selected{% endif %}>Fair</option>
+                        <option value="for_parts" {% if condition == 'for_parts' %}selected{% endif %}>For Parts</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Price Range</label>
+                    <div class="row">
+                        <div class="col-6">
+                            <input type="number" class="form-control" name="min_price" placeholder="Min" value="{{ min_price }}">
+                        </div>
+                        <div class="col-6">
+                            <input type="number" class="form-control" name="max_price" placeholder="Max" value="{{ max_price }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                <a href="{% url 'catalog' %}" class="btn btn-outline-secondary w-100 mt-2">Clear Filters</a>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Listings Grid -->
+    <div class="col-lg-9">
+        {% if page_obj %}
+            <div class="row">
+                {% for listing in page_obj %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card listing-card h-100">
+                            {% if listing.primary_image %}
+                                <img src="{{ listing.primary_image.image.url }}" class="listing-image" alt="{{ listing.primary_image.alt_text|default:listing.title }}">
+                            {% else %}
+                                <img src="https://via.placeholder.com/300x200?text=No+Image" class="listing-image" alt="{{ listing.title }}">
+                            {% endif %}
+                            
+                            <div class="card-body d-flex flex-column">
+                                <div class="mb-2">
+                                    {% if listing.listing_type == 'auction' %}
+                                        <span class="badge badge-auction">Auction</span>
+                                    {% elif listing.listing_type == 'buy_now' %}
+                                        <span class="badge badge-buy-now">Buy Now</span>
+                                    {% else %}
+                                        <span class="badge badge-both">Both</span>
+                                    {% endif %}
+                                    
+                                    <span class="badge bg-secondary">{{ listing.get_condition_display }}</span>
+                                </div>
+                                
+                                <h5 class="listing-title">{{ listing.title }}</h5>
+                                
+                                <p class="listing-meta mb-2">
+                                    <i class="bi bi-person"></i> {{ listing.seller.email }}
+                                </p>
+                                
+                                <p class="listing-meta mb-2">
+                                    <i class="bi bi-tag"></i> {{ listing.category.name }}
+                                </p>
+                                
+                                <div class="mt-auto">
+                                    <p class="listing-price mb-1">
+                                        {% if listing.current_price %}
+                                            ${{ listing.current_price }}
+                                        {% else %}
+                                            ${{ listing.buy_now_price }}
+                                        {% endif %}
+                                    </p>
+                                    
+                                    {% if listing.is_auction %}
+                                        <p class="listing-meta">
+                                            <i class="bi bi-gavel"></i> Current Bid: ${{ listing.current_bid|default:listing.starting_bid }}
+                                        </p>
+                                        
+                                        {% if listing.time_remaining %}
+                                            <p class="listing-meta">
+                                                <i class="bi bi-clock"></i> 
+                                                {% if listing.time_remaining.days > 0 %}
+                                                    {{ listing.time_remaining.days }}d {{ listing.time_remaining.seconds // 3600 }}h
+                                                {% else %}
+                                                    {{ listing.time_remaining.seconds // 3600 }}h {{ (listing.time_remaining.seconds % 3600) // 60 }}m
+                                                {% endif %}
+                                            </p>
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    {% if listing.is_buy_now %}
+                                        <p class="listing-meta">
+                                            <i class="bi bi-box"></i> {{ listing.available_stock }} available
+                                        </p>
+                                    {% endif %}
+                                </div>
+                                
+                                <a href="{% url 'listing_detail' listing.slug %}" class="btn btn-primary w-100 mt-2">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if listing_type %}&type={{ listing_type }}{% endif %}{% if condition %}&condition={{ condition }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if listing_type %}&type={{ listing_type }}{% endif %}{% if condition %}&condition={{ condition }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if listing_type %}&type={{ listing_type }}{% endif %}{% if condition %}&condition={{ condition }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if listing_type %}&type={{ listing_type }}{% endif %}{% if condition %}&condition={{ condition }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-info">
+                <h4>No listings found</h4>
+                <p>Try adjusting your filters or check back later for new listings.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

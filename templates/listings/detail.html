@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ listing.title }} - Django Merchant{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Image Gallery -->
+        <div class="card mb-4">
+            <div class="card-body">
+                {% if listing.primary_image %}
+                    <img src="{{ listing.primary_image.image.url }}" class="img-fluid w-100" alt="{{ listing.primary_image.alt_text|default:listing.title }}" style="max-height: 500px; object-fit: contain;">
+                {% else %}
+                    <img src="https://via.placeholder.com/800x500?text=No+Image" class="img-fluid w-100" alt="{{ listing.title }}">
+                {% endif %}
+                
+                {% if listing.images.count > 1 %}
+                    <div class="row mt-3">
+                        {% for image in listing.images.all %}
+                            <div class="col-3">
+                                <img src="{{ image.image.url }}" class="img-fluid" alt="{{ image.alt_text }}" style="cursor: pointer; height: 80px; object-fit: cover;">
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Listing Details -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h1 class="mb-2">{{ listing.title }}</h1>
+                        <div class="mb-2">
+                            {% if listing.listing_type == 'auction' %}
+                                <span class="badge badge-auction">Auction</span>
+                            {% elif listing.listing_type == 'buy_now' %}
+                                <span class="badge badge-buy-now">Buy Now</span>
+                            {% else %}
+                                <span class="badge badge-both">Both</span>
+                            {% endif %}
+                            
+                            <span class="badge bg-secondary">{{ listing.get_condition_display }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-end">
+                        <h2 class="listing-price mb-0">
+                            {% if listing.current_price %}
+                                ${{ listing.current_price }}
+                            {% else %}
+                                ${{ listing.buy_now_price }}
+                            {% endif %}
+                        </h2>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Seller:</strong> {{ listing.seller.email }}</p>
+                        <p class="mb-1"><strong>Category:</strong> {{ listing.category.name }}</p>
+                        {% if listing.size %}
+                            <p class="mb-1"><strong>Size:</strong> {{ listing.size.display_name }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Listed:</strong> {{ listing.created_at|date:"F d, Y" }}</p>
+                        <p class="mb-1"><strong>Views:</strong> {{ listing.view_count }}</p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h5>Description</h5>
+                <p>{{ listing.description|linebreaks }}</p>
+                
+                {% if listing.attributes.exists %}
+                    <hr>
+                    <h5>Attributes</h5>
+                    <div class="row">
+                        {% for attr in listing.attributes.all %}
+                            <div class="col-md-6 mb-2">
+                                <strong>{{ attr.attribute.name }}:</strong> {{ attr.value }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Bidding Section -->
+        {% if listing.is_auction %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Auction Information</h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <p class="mb-1"><strong>Starting Bid:</strong> ${{ listing.starting_bid }}</p>
+                            <p class="mb-1"><strong>Current Bid:</strong> ${{ listing.current_bid|default:listing.starting_bid }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-1"><strong>Reserve Price:</strong> 
+                                {% if listing.reserve_price %}
+                                    ${{ listing.reserve_price }}
+                                {% else %}
+                                    No Reserve
+                                {% endif %}
+                            </p>
+                            <p class="mb-1"><strong>Minimum Increment:</strong> ${{ listing.minimum_increment }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-1"><strong>Auction Ends:</strong> {{ listing.auction_end|date:"F d, Y H:i" }}</p>
+                            {% if listing.time_remaining %}
+                                <p class="mb-1"><strong>Time Remaining:</strong> 
+                                    {% if listing.time_remaining.days > 0 %}
+                                        {{ listing.time_remaining.days }}d {{ listing.time_remaining.seconds // 3600 }}h
+                                    {% else %}
+                                        {{ listing.time_remaining.seconds // 3600 }}h {{ (listing.time_remaining.seconds % 3600) // 60 }}m
+                                    {% endif %}
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if user.is_authenticated and listing.status == 'active' %}
+                        <form method="POST" action="{% url 'place_bid' listing.slug %}">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" name="amount" step="0.01" min="{{ listing.current_bid|add:listing.minimum_increment|default:listing.starting_bid }}" required>
+                                        <button type="submit" class="btn btn-primary">Place Bid</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <hr>
+                        
+                        <h6>Set Maximum Bid (Auto-Bid)</h6>
+                        <form method="POST" action="{% url 'set_max_bid_cap' listing.slug %}">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" name="max_amount" step="0.01" placeholder="Maximum amount" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" name="personal_increment" step="0.01" placeholder="Preferred increment (optional)">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-secondary">Set Max Bid Cap</button>
+                        </form>
+                    {% elif not user.is_authenticated %}
+                        <p class="text-muted">Please <a href="{% url 'login' %}">login</a> to place bids.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- Buy Now Section -->
+        {% if listing.is_buy_now and listing.available_stock > 0 %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Buy Now</h5>
+                    <p class="lead">Price: ${{ listing.buy_now_price }}</p>
+                    <p>Available: {{ listing.available_stock }}</p>
+                    
+                    {% if user.is_authenticated %}
+                        <button class="btn btn-success btn-lg">Add to Cart</button>
+                    {% else %}
+                        <p class="text-muted">Please <a href="{% url 'login' %}">login</a> to purchase.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Seller Info -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Seller Information</h5>
+                <p><strong>Email:</strong> {{ listing.seller.email }}</p>
+                {% if listing.seller.seller_profile %}
+                    <p><strong>Business:</strong> {{ listing.seller.seller_profile.business_name|default:"Not specified" }}</p>
+                    <p><strong>Rating:</strong> {{ listing.seller.seller_profile.rating }}/5.0</p>
+                    <p><strong>Total Sales:</strong> {{ listing.seller.seller_profile.total_sales }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Similar Listings -->
+        {% if similar_listings %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Similar Listings</h5>
+                    {% for similar in similar_listings %}
+                        <div class="d-flex mb-3">
+                            {% if similar.primary_image %}
+                                <img src="{{ similar.primary_image.image.url }}" class="me-2" style="width: 80px; height: 80px; object-fit: cover;" alt="{{ similar.title }}">
+                            {% else %}
+                                <img src="https://via.placeholder.com/80x80?text=No+Image" class="me-2" style="width: 80px; height: 80px; object-fit: cover;" alt="{{ similar.title }}">
+                            {% endif %}
+                            <div>
+                                <h6 class="mb-1"><a href="{% url 'listing_detail' similar.slug %}">{{ similar.title }}</a></h6>
+                                <p class="mb-0">${{ similar.current_price|default:similar.buy_now_price }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
