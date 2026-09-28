@@ -3,23 +3,12 @@ services:
     name: online-merchant
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
-    preDeployCommand: python manage.py migrate --noinput
-    startCommand: uvicorn config.asgi:application --host 0.0.0.0 --port $PORT --log-level info
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
         value: "False"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: online_merchant-db
-          property: connectionString
       - key: ALLOWED_HOSTS
         value: "*.onrender.com"
-        sync: false
-
-databases:
-  - name: online_merchant-db
-    databaseName: online_merchant_db
-    user: online_merchant_db_user
