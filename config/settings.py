@@ -10,6 +10,12 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
+# Automatically add Render domain if running on Render
+if 'RENDER' in os.environ:
+    render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '')
+    if render_host and render_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(render_host)
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
