@@ -81,20 +81,8 @@ if database_url:
             conn_health_checks=True
         )
     }
-elif 'RENDER' in os.environ:
-    # Use individual Render environment variables
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME'),
-            'USER': os.environ.get('DB_USER'),
-            'PASSWORD': os.environ.get('DB_PASSWORD'),
-            'HOST': os.environ.get('DB_HOST'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
-        }
-    }
 else:
-    # Local development configuration
+    # Local development configuration (or fallback)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
