@@ -78,11 +78,6 @@ import logging
 db_logger = logging.getLogger(__name__)
 db_logger.info(f"DATABASE_URL environment variable: {'SET' if database_url else 'NOT SET'}")
 
-# On Render, always require DATABASE_URL
-if 'RENDER' in os.environ and not database_url:
-    db_logger.error("Running on Render but DATABASE_URL is not set!")
-    raise ValueError("DATABASE_URL must be set when running on Render")
-
 if database_url:
     # Parse DATABASE_URL using dj-database-url
     try:
@@ -97,28 +92,51 @@ if database_url:
         db_logger.info(f"Database host: {DATABASES['default'].get('HOST', 'NOT SET')}")
         db_logger.info(f"Database name: {DATABASES['default'].get('NAME', 'NOT SET')}")
         
-        # Validate the parsed configuration
-        if not DATABASES['default'].get('HOST') or DATABASES['default'].get('HOST') == 'hostname':
-            raise ValueError(f"Invalid database host: {DATABASES['default'].get('HOST')}")
-            
+        # Validate the parsed configuration (log warning instead of failing)
+        db_host = DATABASES['default'].get('HOST')
+        if not db_host or db_host in ['hostname', 'localhost', '127.0.0.1']:
+            if 'RENDER' in os.environ:
+                db_logger.warning(f"Potentially invalid database host for Render: {db_host}")
+                db_logger.warning("This may indicate DATABASE_URL is not properly configured")
+        
     except Exception as e:
         db_logger.error(f"Error parsing DATABASE_URL: {e}")
-        raise
-else:
-    # Local development configuration (or fallback)
-    db_logger.warning("DATABASE_URL not set, using local development configuration")
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME', default='django_merchant'),
-            'USER': config('DB_USER', default='postgres'),
-            'PASSWORD': config('DB_PASSWORD', default='postgres'),
-            'HOST': config('DB_HOST', default='localhost'),
-            'PORT': config('DB_PORT', default='5432'),
+        # Don't fail completely, try fallback
+        db_logger.warning("Falling back to environment variable configuration")
+        database_url = None
+        
+if not database_url:
+    # Fallback configuration (for Render individual env vars or local dev)
+    if 'RENDER' in os.environ:
+        # Try Render-specific environment variables
+        db_logger.info("Attempting Render-specific database configuration")
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.environ.get('DB_NAME', 'django_merchant'),
+                'USER': os.environ.get('DB_USER', 'postgres'),
+                'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+                'HOST': os.environ.get('DB_HOST', 'localhost'),
+                'PORT': os.environ.get('DB_PORT', '5432'),
+            }
         }
-    }
-    db_logger.info(f"Database configured for local development")
-    db_logger.info(f"Database host: {DATABASES['default']['HOST']}")
+        db_logger.info(f"Database configured from Render environment variables")
+        db_logger.info(f"Database host: {DATABASES['default']['HOST']}")
+    else:
+        # Local development configuration
+        db_logger.warning("DATABASE_URL not set, using local development configuration")
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': config('DB_NAME', default='django_merchant'),
+                'USER': config('DB_USER', default='postgres'),
+                'PASSWORD': config('DB_PASSWORD', default='postgres'),
+                'HOST': config('DB_HOST', default='localhost'),
+                'PORT': config('DB_PORT', default='5432'),
+            }
+        }
+        db_logger.info(f"Database configured for local development")
+        db_logger.info(f"Database host: {DATABASES['default']['HOST']}")
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
