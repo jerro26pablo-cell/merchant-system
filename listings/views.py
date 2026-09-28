@@ -8,9 +8,16 @@ from .forms import ListingForm, ListingImageFormSet
 
 def listing_catalog(request):
     """Catalog-style view of all active listings"""
-    listings = Listing.objects.filter(
-        status='active'
-    ).select_related('seller', 'category').prefetch_related('images').order_by('-created_at')
+    try:
+        listings = Listing.objects.filter(
+            status='active'
+        ).select_related('seller', 'category').prefetch_related('images').order_by('-created_at')
+    except Exception as e:
+        # Handle database errors gracefully
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching listings: {e}")
+        listings = Listing.objects.none()
     
     # Search functionality
     search_query = request.GET.get('search', '')
