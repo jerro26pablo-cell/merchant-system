@@ -37,10 +37,6 @@ def main():
     logger.info("=== Starting Django Application ===")
     logger.info("Running startup tasks...")
     
-    # Check database configuration
-    if not run_command("python manage.py check_db", "Database configuration check"):
-        logger.warning("Database check failed, but continuing...")
-    
     # Run migrations (critical)
     if not run_command("python manage.py migrate --noinput", "Database migrations"):
         logger.error("CRITICAL: Migrations failed, cannot start application")
