@@ -14,6 +14,8 @@ class User(AbstractUser):
     status = models.CharField(max_length=20, choices=USER_STATUS_CHOICES, default='pending')
     email_verified = models.BooleanField(default=False)
     phone = models.CharField(max_length=20, blank=True)
+    province = models.CharField(max_length=100, blank=True, help_text=_('Province'))
+    municipality = models.CharField(max_length=100, blank=True, help_text=_('Municipality/City'))
     address = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

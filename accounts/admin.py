@@ -4,17 +4,17 @@ from .models import User, SellerProfile, BuyerProfile, RiderProfile
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ['email', 'username', 'seller_enabled', 'status', 'email_verified', 'is_staff', 'created_at']
-    list_filter = ['seller_enabled', 'status', 'email_verified', 'is_staff', 'is_superuser']
-    search_fields = ['email', 'username', 'first_name', 'last_name']
+    list_display = ['email', 'username', 'seller_enabled', 'status', 'email_verified', 'province', 'is_staff', 'created_at']
+    list_filter = ['seller_enabled', 'status', 'email_verified', 'province', 'is_staff', 'is_superuser']
+    search_fields = ['email', 'username', 'first_name', 'last_name', 'province', 'municipality']
     ordering = ['-created_at']
     
     fieldsets = BaseUserAdmin.fieldsets + (
-        ('Additional Info', {'fields': ('seller_enabled', 'status', 'email_verified', 'phone', 'address')}),
+        ('Additional Info', {'fields': ('seller_enabled', 'status', 'email_verified', 'phone', 'province', 'municipality', 'address')}),
     )
     
     add_fieldsets = BaseUserAdmin.add_fieldsets + (
-        ('Additional Info', {'fields': ('email', 'seller_enabled', 'status', 'phone', 'address')}),
+        ('Additional Info', {'fields': ('email', 'seller_enabled', 'status', 'phone', 'province', 'municipality', 'address')}),
     )
 
 @admin.register(SellerProfile)
