@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from decouple import config
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -68,8 +69,18 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
 # Database configuration
-# Use Render environment variables if available, otherwise use config
-if 'RENDER' in os.environ:
+# Priority: DATABASE_URL env var > Individual DB env vars > Local config
+if 'DATABASE_URL' in os.environ:
+    # Parse DATABASE_URL using dj-database-url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True
+        )
+    }
+elif 'RENDER' in os.environ:
+    # Use individual Render environment variables
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -81,6 +92,7 @@ if 'RENDER' in os.environ:
         }
     }
 else:
+    # Local development configuration
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
