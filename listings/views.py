@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db.models import Q, Count, Case, When, F, DecimalField
 from django.core.paginator import Paginator
 from django.db.models.functions import Coalesce
+from django.db import transaction
 from decimal import Decimal, InvalidOperation
 from django.http import JsonResponse
 from .models import Listing, ListingImage, ListingAttribute, InventoryLog, Wishlist, Conversation, Message
@@ -697,10 +698,102 @@ def add_to_wishlist(request, slug):
 
         messages.success(request, f'Added to wishlist! Total: {wishlist_item.quantity} items')
         return redirect('wishlist')
-        
+
     except Exception as e:
         logger.error(f"Error in add_to_wishlist: {e}", exc_info=True)
         messages.error(request, 'An error occurred while adding to wishlist.')
+        return redirect('listing_detail', slug=slug)
+
+@login_required
+@transaction.atomic
+def buy_now(request, slug):
+    """Direct buy now purchase"""
+    try:
+        listing = get_object_or_404(Listing, slug=slug)
+
+        # Prevent seller from buying their own items
+        if request.user == listing.seller:
+            messages.error(request, 'You cannot buy your own listing.')
+            return redirect('listing_detail', slug=slug)
+
+        # Only buy-now items can be purchased
+        if not listing.is_buy_now:
+            messages.error(request, 'This item is not available for buy now.')
+            return redirect('listing_detail', slug=slug)
+
+        if listing.available_stock <= 0:
+            messages.error(request, 'This item is out of stock.')
+            return redirect('listing_detail', slug=slug)
+
+        if request.method == 'POST':
+            quantity = int(request.POST.get('quantity', 1))
+
+            if quantity < 1:
+                messages.error(request, 'Quantity must be at least 1.')
+                return redirect('listing_detail', slug=slug)
+
+            if quantity > listing.available_stock:
+                messages.error(request, f'Only {listing.available_stock} items available.')
+                return redirect('listing_detail', slug=slug)
+
+            # Create order
+            from orders.models import Order
+            from wallets.models import Wallet, WalletTransaction
+
+            # Check wallet balance
+            wallet, _ = Wallet.objects.get_or_create(user=request.user)
+            total_amount = listing.buy_now_price * quantity
+
+            if wallet.balance < total_amount:
+                messages.error(request, f'Insufficient wallet balance. You need ₱{total_amount} but have ₱{wallet.balance}.')
+                return redirect('listing_detail', slug=slug)
+
+            # Create order
+            order = Order.objects.create(
+                buyer=request.user,
+                listing=listing,
+                order_type='buy_now',
+                quantity=quantity,
+                total_amount=total_amount,
+                shipping_address=request.user.buyer_profile.shipping_address if hasattr(request.user, 'buyer_profile') else request.user.address if request.user.address else 'No address provided',
+                status='pending'
+            )
+
+            # Deduct from wallet
+            wallet.balance -= total_amount
+            wallet.save()
+
+            WalletTransaction.objects.create(
+                wallet=wallet,
+                transaction_type='payment',
+                amount=-total_amount,
+                description=f'Payment for order {order.order_number}',
+                related_order=order
+            )
+
+            # Reduce stock
+            listing.available_stock -= quantity
+            listing.quantity_sold += quantity
+            listing.save()
+
+            # Log inventory change
+            InventoryLog.objects.create(
+                listing=listing,
+                change_type='sale',
+                quantity_before=listing.available_stock + quantity,
+                quantity_after=listing.available_stock,
+                notes=f'Buy now order {order.order_number}: {quantity} items'
+            )
+
+            logger.info(f"User {request.user.id} bought {listing.slug} (qty: {quantity})")
+            messages.success(request, f'Purchase successful! Order {order.order_number}.')
+            return redirect('order_list')
+
+        return redirect('listing_detail', slug=slug)
+
+    except Exception as e:
+        logger.error(f"Error in buy_now: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while processing your purchase.')
         return redirect('listing_detail', slug=slug)
 
 @login_required
@@ -780,6 +873,7 @@ def remove_from_wishlist(request, item_id):
         return redirect('wishlist')
 
 @login_required
+@transaction.atomic
 def checkout_wishlist(request):
     """Checkout all items in wishlist"""
     try:
@@ -791,16 +885,26 @@ def checkout_wishlist(request):
         
         # Create orders for each item
         from orders.models import Order
+        from wallets.models import Wallet, WalletTransaction
+
         orders_created = []
-        
+        total_deduction = 0
+
         for wishlist_item in wishlist_items:
             listing = wishlist_item.listing
-            
+
             # Check stock again
             if listing.available_stock < wishlist_item.quantity:
                 messages.error(request, f'{listing.title} no longer has enough stock.')
                 continue
-            
+
+            # Check wallet balance for this item
+            wallet, _ = Wallet.objects.get_or_create(user=request.user)
+
+            if wallet.balance < wishlist_item.total_price:
+                messages.error(request, f'Insufficient wallet balance for {listing.title}. Need ₱{wishlist_item.total_price} but have ₱{wallet.balance}.')
+                continue
+
             # Create order
             order = Order.objects.create(
                 buyer=request.user,
@@ -811,12 +915,22 @@ def checkout_wishlist(request):
                 shipping_address=request.user.buyer_profile.shipping_address if hasattr(request.user, 'buyer_profile') else request.user.address if request.user.address else 'No address provided',
                 status='pending'
             )
-            
+
+            total_deduction += wishlist_item.total_price
+
+            WalletTransaction.objects.create(
+                wallet=wallet,
+                transaction_type='payment',
+                amount=-wishlist_item.total_price,
+                description=f'Payment for order {order.order_number}',
+                related_order=order
+            )
+
             # Reduce stock
             listing.available_stock -= wishlist_item.quantity
             listing.quantity_sold += wishlist_item.quantity
             listing.save()
-            
+
             # Log inventory change
             InventoryLog.objects.create(
                 listing=listing,
@@ -825,10 +939,15 @@ def checkout_wishlist(request):
                 quantity_after=listing.available_stock,
                 notes=f'Wishlist checkout order {order.order_number}: {wishlist_item.quantity} items'
             )
-            
+
             orders_created.append(order)
             wishlist_item.delete()
-        
+
+        # Deduct total from wallet once
+        if total_deduction > 0:
+            wallet.balance -= total_deduction
+            wallet.save()
+
         if orders_created:
             messages.success(request, f'Successfully created {len(orders_created)} order(s)!')
             return redirect('order_list')

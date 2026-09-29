@@ -21,6 +21,7 @@ urlpatterns = [
     path('wishlist/update/<int:item_id>/', views.update_wishlist_quantity, name='update_wishlist_quantity'),
     path('wishlist/remove/<int:item_id>/', views.remove_from_wishlist, name='remove_from_wishlist'),
     path('wishlist/checkout/', views.checkout_wishlist, name='checkout_wishlist'),
+    path('buy-now/<slug:slug>/', views.buy_now, name='buy_now'),
     path('conversations/', views.conversation_list, name='conversation_list'),
     path('conversations/<int:conversation_id>/', views.conversation_detail, name='conversation_detail'),
     path('conversations/start/<slug:slug>/', views.start_conversation, name='start_conversation'),
