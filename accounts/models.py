@@ -43,7 +43,7 @@ class User(AbstractUser):
         if not self.seller_enabled:
             self.seller_enabled = True
             self.save()
-            SellerProfile.objects.get_or_create(user=self)
+            # SellerProfile creation is handled in the view to avoid circular import
     
     def disable_seller_mode(self):
         if self.seller_enabled:

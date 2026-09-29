@@ -23,131 +23,154 @@ def listing_catalog(request):
         logger.error(f"Error fetching listings: {e}", exc_info=True)
         listings = Listing.objects.none()
     
-    # Search functionality
-    search_query = request.GET.get('search', '')
-    if search_query:
-        listings = listings.filter(
-            Q(title__icontains=search_query) |
-            Q(description__icontains=search_query)
+    try:
+        # Search functionality
+        search_query = request.GET.get('search', '')
+        if search_query:
+            listings = listings.filter(
+                Q(title__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
+        
+        # Category filter
+        category_slug = request.GET.get('category')
+        if category_slug:
+            listings = listings.filter(category__slug=category_slug)
+        
+        # Listing type filter
+        listing_type = request.GET.get('type')
+        if listing_type:
+            listings = listings.filter(listing_type=listing_type)
+        
+        # Condition filter
+        condition = request.GET.get('condition')
+        if condition:
+            listings = listings.filter(condition=condition)
+        
+        # Price range filter - annotate with calculated price
+        # For auctions: use current_bid if available, otherwise starting_bid
+        # For buy-now: use buy_now_price
+        listings = listings.annotate(
+            calculated_price=Case(
+                When(
+                    listing_type__in=['auction', 'both'],
+                    then=Coalesce(F('current_bid'), F('starting_bid'))
+                ),
+                default=F('buy_now_price'),
+                output_field=DecimalField()
+            )
         )
-    
-    # Category filter
-    category_slug = request.GET.get('category')
-    if category_slug:
-        listings = listings.filter(category__slug=category_slug)
-    
-    # Listing type filter
-    listing_type = request.GET.get('type')
-    if listing_type:
-        listings = listings.filter(listing_type=listing_type)
-    
-    # Condition filter
-    condition = request.GET.get('condition')
-    if condition:
-        listings = listings.filter(condition=condition)
-    
-    # Price range filter - annotate with calculated price
-    # For auctions: use current_bid if available, otherwise starting_bid
-    # For buy-now: use buy_now_price
-    listings = listings.annotate(
-        calculated_price=Case(
-            When(
-                listing_type__in=['auction', 'both'],
-                then=Coalesce(F('current_bid'), F('starting_bid'))
-            ),
-            default=F('buy_now_price'),
-            output_field=DecimalField()
-        )
-    )
-    
-    min_price = request.GET.get('min_price')
-    max_price = request.GET.get('max_price')
-    if min_price:
-        try:
-            min_price_decimal = Decimal(min_price)
-            listings = listings.filter(calculated_price__gte=min_price_decimal)
-        except (ValueError, InvalidOperation, TypeError):
-            logger.warning(f"Invalid min_price value: {min_price}")
-    if max_price:
-        try:
-            max_price_decimal = Decimal(max_price)
-            listings = listings.filter(calculated_price__lte=max_price_decimal)
-        except (ValueError, InvalidOperation, TypeError):
-            logger.warning(f"Invalid max_price value: {max_price}")
-    
-    # Pagination
-    paginator = Paginator(listings, 12)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    context = {
-        'page_obj': page_obj,
-        'search_query': search_query,
-        'category_slug': category_slug,
-        'listing_type': listing_type,
-        'condition': condition,
-        'min_price': min_price,
-        'max_price': max_price,
-    }
-    
-    return render(request, 'listings/catalog.html', context)
+        
+        min_price = request.GET.get('min_price')
+        max_price = request.GET.get('max_price')
+        if min_price:
+            try:
+                min_price_decimal = Decimal(min_price)
+                listings = listings.filter(calculated_price__gte=min_price_decimal)
+            except (ValueError, InvalidOperation, TypeError):
+                logger.warning(f"Invalid min_price value: {min_price}")
+        if max_price:
+            try:
+                max_price_decimal = Decimal(max_price)
+                listings = listings.filter(calculated_price__lte=max_price_decimal)
+            except (ValueError, InvalidOperation, TypeError):
+                logger.warning(f"Invalid max_price value: {max_price}")
+        
+        # Pagination
+        paginator = Paginator(listings, 12)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        context = {
+            'page_obj': page_obj,
+            'search_query': search_query,
+            'category_slug': category_slug,
+            'listing_type': listing_type,
+            'condition': condition,
+            'min_price': min_price,
+            'max_price': max_price,
+        }
+        
+        return render(request, 'listings/catalog.html', context)
+    except Exception as e:
+        logger.error(f"Error in listing catalog processing: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while loading the catalog.')
+        return render(request, 'listings/catalog.html', {
+            'page_obj': Paginator(Listing.objects.none(), 12).get_page(1),
+            'search_query': '',
+            'category_slug': '',
+            'listing_type': '',
+            'condition': '',
+            'min_price': '',
+            'max_price': '',
+        })
 
 def listing_detail(request, slug):
-    listing = get_object_or_404(Listing, slug=slug, status='active')
-    
-    # Track view
-    listing.add_view(
-        user=request.user if request.user.is_authenticated else None,
-        ip_address=request.META.get('REMOTE_ADDR')
-    )
-    
-    # Get similar listings
-    similar_listings = Listing.objects.filter(
-        category=listing.category,
-        status='active'
-    ).exclude(id=listing.id)[:4]
-    
-    context = {
-        'listing': listing,
-        'similar_listings': similar_listings,
-    }
-    
-    return render(request, 'listings/detail.html', context)
+    try:
+        listing = get_object_or_404(Listing, slug=slug, status='active')
+        
+        # Track view
+        listing.add_view(
+            user=request.user if request.user.is_authenticated else None,
+            ip_address=request.META.get('REMOTE_ADDR')
+        )
+        
+        # Get similar listings
+        similar_listings = Listing.objects.filter(
+            category=listing.category,
+            status='active'
+        ).exclude(id=listing.id)[:4]
+        
+        context = {
+            'listing': listing,
+            'similar_listings': similar_listings,
+        }
+        
+        return render(request, 'listings/detail.html', context)
+    except Exception as e:
+        logger.error(f"Error in listing detail: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while loading the listing details.')
+        return redirect('catalog')
 
 @login_required
 def create_listing(request):
-    if not request.user.is_seller:
-        messages.error(request, 'You need to enable seller mode to create listings.')
-        return redirect('enable_seller_mode')
-    
-    if request.method == 'POST':
-        form = ListingForm(request.POST, request.FILES)
-        if form.is_valid():
-            listing = form.save(commit=False)
-            listing.seller = request.user
-            listing.save()
-            
-            # Handle images
-            image_formset = ListingImageFormSet(request.POST, request.FILES, instance=listing)
-            if image_formset.is_valid():
-                image_formset.save()
-            
-            # Log inventory
-            InventoryLog.objects.create(
-                listing=listing,
-                change_type='restock',
-                quantity_before=0,
-                quantity_after=listing.quantity,
-                notes='Initial listing creation'
-            )
-            
-            messages.success(request, 'Listing created successfully!')
-            return redirect('listing_detail', slug=listing.slug)
-    else:
-        form = ListingForm()
-        image_formset = ListingImageFormSet()
-    
-    return render(request, 'listings/create.html', {'form': form, 'image_formset': image_formset})
+    try:
+        if not request.user.is_seller:
+            messages.error(request, 'You need to enable seller mode to create listings.')
+            return redirect('enable_seller_mode')
+        
+        if request.method == 'POST':
+            form = ListingForm(request.POST, request.FILES)
+            if form.is_valid():
+                listing = form.save(commit=False)
+                listing.seller = request.user
+                listing.save()
+                
+                # Handle images
+                image_formset = ListingImageFormSet(request.POST, request.FILES, instance=listing)
+                if image_formset.is_valid():
+                    image_formset.save()
+                
+                # Log inventory
+                InventoryLog.objects.create(
+                    listing=listing,
+                    change_type='restock',
+                    quantity_before=0,
+                    quantity_after=listing.quantity,
+                    notes='Initial listing creation'
+                )
+                
+                messages.success(request, 'Listing created successfully!')
+                return redirect('listing_detail', slug=listing.slug)
+        else:
+            form = ListingForm()
+            image_formset = ListingImageFormSet()
+        
+        return render(request, 'listings/create.html', {'form': form, 'image_formset': image_formset})
+    except Exception as e:
+        logger.error(f"Error in create listing: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while creating the listing.')
+        return render(request, 'listings/create.html', {'form': ListingForm(), 'image_formset': ListingImageFormSet()})
 
 @login_required
 def edit_listing(request, slug):
