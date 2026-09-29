@@ -10,14 +10,13 @@ class ListingForm(forms.ModelForm):
             'title', 'description', 'category', 'listing_type', 'condition',
             'quantity', 'available_stock', 'auction_quantity',
             'starting_bid', 'buy_now_price', 'reserve_price', 'minimum_increment',
-            'auction_start', 'auction_end', 'anti_snipe_seconds', 'auto_relist',
-            'size', 'shipping_address'
+            'auction_start', 'auction_end', 'anti_snipe_seconds',
+            'size'
         ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 5}),
             'auction_start': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'auction_end': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-            'shipping_address': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Enter shipping address (optional)'}),
         }
     
     def __init__(self, *args, **kwargs):
