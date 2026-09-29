@@ -1,23 +1,23 @@
 {% extends 'base.html' %}
 {% load listing_filters %}
 
-{% block title %}Create New Listing - Welcome Online Merchant{% endblock %}
+{% block title %}Edit Listing - {{ listing.title }}{% endblock %}
 
 {% block extra_css %}
 <style>
-    .create-listing-container {
+    .edit-listing-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 2rem;
         border-radius: 20px;
         margin-bottom: 2rem;
     }
     
-    .create-listing-container h1 {
+    .edit-listing-container h1 {
         color: white;
         margin-bottom: 0.5rem;
     }
     
-    .create-listing-container p {
+    .edit-listing-container p {
         color: rgba(255,255,255,0.9);
         margin-bottom: 0;
     }
@@ -103,48 +103,6 @@
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
     }
     
-    .tip-card {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        border-radius: 16px;
-        padding: 1.5rem;
-        color: white;
-        margin-bottom: 1rem;
-    }
-    
-    .tip-card h5 {
-        color: white;
-        margin-bottom: 1rem;
-        font-weight: 700;
-    }
-    
-    .tip-card ul li {
-        margin-bottom: 0.75rem;
-        color: rgba(255,255,255,0.95);
-    }
-    
-    .tip-card ul li i {
-        color: white;
-        margin-right: 0.5rem;
-    }
-    
-    .listing-type-card {
-        background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-        border-radius: 16px;
-        padding: 1.5rem;
-        color: white;
-    }
-    
-    .listing-type-card h5 {
-        color: white;
-        margin-bottom: 1rem;
-        font-weight: 700;
-    }
-    
-    .listing-type-card p {
-        color: rgba(255,255,255,0.95);
-        margin-bottom: 0.5rem;
-    }
-    
     .form-control, .form-select {
         border: 2px solid #e2e8f0;
         border-radius: 10px;
@@ -177,31 +135,6 @@
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
     }
     
-    .btn-outline-success {
-        border: 2px solid #4ade80;
-        color: #4ade80;
-        padding: 0.875rem 2rem;
-        border-radius: 10px;
-        font-weight: 600;
-    }
-    
-    .btn-outline-success:hover {
-        background: #4ade80;
-        color: white;
-    }
-    
-    .info-alert {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        border: 2px solid #667eea;
-        border-radius: 12px;
-        padding: 1.5rem;
-    }
-    
-    .info-alert h5 {
-        color: #667eea;
-        font-weight: 700;
-    }
-    
     .delete-image-btn {
         background: #fee2e2;
         color: #dc2626;
@@ -217,13 +150,19 @@
         background: #dc2626;
         color: white;
     }
+    
+    .current-image {
+        max-width: 200px;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="create-listing-container">
-    <h1 class="display-4">✨ Create New Listing</h1>
-    <p class="lead">Add a new product to your inventory</p>
+<div class="edit-listing-container">
+    <h1 class="display-4">✏️ Edit Listing</h1>
+    <p class="lead">Update your product information</p>
 </div>
 
 <div class="row">
@@ -342,12 +281,15 @@
                         <div class="image-form" data-index="{{ forloop.counter0 }}">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <strong class="image-label">{% if forloop.first %}📸 Main Photo (Thumbnail){% else %}📷 {{ forloop.counter0|add:1|ordinal }} Photo{% endif %}</strong>
-                                {% if not forloop.first %}
+                                {% if form.instance.id %}
                                     <button type="button" class="delete-image-btn" onclick="this.closest('.image-form').remove();">
                                         <i class="bi bi-trash"></i> Remove
                                     </button>
                                 {% endif %}
                             </div>
+                            {% if form.instance.image %}
+                                <img src="{{ form.instance.image.url }}" class="current-image" alt="Current image">
+                            {% endif %}
                             <div class="mb-3">
                                 <label for="{{ form.image.id_for_label }}" class="form-label">Choose Image</label>
                                 {{ form.image }}
@@ -377,31 +319,14 @@
                 
                 <div class="mb-3">
                     <label for="id_shipping_address" class="form-label">🚚 Shipping Address</label>
-                    <div class="mb-2">
-                        {% if user.buyer_profile and user.buyer_profile.shipping_address %}
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="use-saved-address" data-saved-address="{{ user.buyer_profile.shipping_address|escapejs }}">
-                                <i class="bi bi-bookmark"></i> Use Saved Address
-                            </button>
-                        {% endif %}
-                    </div>
                     {{ form.shipping_address }}
                     <small class="text-muted">Optional - leave blank to use your default address</small>
                 </div>
             </div>
             
-            <!-- Save Options -->
-            <div class="info-alert mb-3">
-                <h5><i class="bi bi-info-circle"></i> Draft vs Official</h5>
-                <p><strong>📝 Draft:</strong> The listing will be saved but not visible in the store. You can edit it later and make it official when ready.</p>
-                <p><strong>🚀 Official:</strong> The listing will be immediately visible to all buyers in the catalog.</p>
-            </div>
-            
             <div class="d-flex gap-2 mb-4">
-                <button type="submit" name="save_as_draft" value="true" class="btn btn-outline-success">
-                    <i class="bi bi-file-earmark"></i> Save as Draft
-                </button>
-                <button type="submit" name="save_as_draft" value="false" class="btn btn-primary">
-                    <i class="bi bi-check-circle"></i> Make Official
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Save Changes
                 </button>
                 <a href="{% url 'inventory_management' %}" class="btn btn-secondary">Cancel</a>
             </div>
@@ -409,22 +334,11 @@
     </div>
     
     <div class="col-md-4">
-        <div class="tip-card">
-            <h5><i class="bi bi-lightbulb"></i> Tips for Better Listings</h5>
-            <ul class="list-unstyled">
-                <li><i class="bi bi-check-circle"></i> Use clear, descriptive titles</li>
-                <li><i class="bi bi-check-circle"></i> Include detailed descriptions</li>
-                <li><i class="bi bi-check-circle"></i> Upload high-quality images</li>
-                <li><i class="bi bi-check-circle"></i> Set competitive prices</li>
-                <li><i class="bi bi-check-circle"></i> Choose the right category</li>
-            </ul>
-        </div>
-        
-        <div class="listing-type-card">
-            <h5><i class="bi bi-tags"></i> Listing Types</h5>
-            <p><strong>💰 Buy Now:</strong> Fixed price, immediate purchase</p>
-            <p><strong>🔨 Auction:</strong> Bidding system, highest bid wins</p>
-            <p><strong>⚡ Both:</strong> Available for both purchase options</p>
+        <div class="alert alert-info">
+            <h5><i class="bi bi-info-circle"></i> Listing Status</h5>
+            <p><strong>Current Status:</strong> {{ listing.get_status_display }}</p>
+            <p><strong>Listing Type:</strong> {{ listing.get_listing_type_display }}</p>
+            <p><strong>Created:</strong> {{ listing.created_at|date:"M d, Y" }}</p>
         </div>
     </div>
 </div>
@@ -549,19 +463,6 @@ document.addEventListener('DOMContentLoaded', function() {
         clothingTypeSelect.addEventListener('change', handleClothingTypeChange);
     }
     
-    // Handle saved address button
-    const useSavedAddressBtn = document.getElementById('use-saved-address');
-    const shippingAddressField = document.getElementById('id_shipping_address');
-    
-    if (useSavedAddressBtn && shippingAddressField) {
-        useSavedAddressBtn.addEventListener('click', function() {
-            const savedAddress = this.getAttribute('data-saved-address');
-            if (savedAddress) {
-                shippingAddressField.value = savedAddress;
-            }
-        });
-    }
-    
     // Handle image formset
     const addImageButton = document.getElementById('add-image');
     const imageFormset = document.getElementById('image-formset');
@@ -584,6 +485,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear input values
         const inputs = newForm.querySelectorAll('input');
         inputs.forEach(input => input.value = '');
+        
+        // Remove current image if exists
+        const currentImage = newForm.querySelector('.current-image');
+        if (currentImage) {
+            currentImage.remove();
+        }
         
         // Update the label based on the index
         const labelElement = newForm.querySelector('.image-label');

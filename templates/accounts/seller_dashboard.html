@@ -23,7 +23,15 @@
         <div class="card text-center">
             <div class="card-body">
                 <h3 class="card-title">{{ active_listings }}</h3>
-                <p class="card-text">Active Listings</p>
+                <p class="card-text">Official Listings</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="card-title">{{ draft_listings }}</h3>
+                <p class="card-text">Draft Listings</p>
             </div>
         </div>
     </div>
@@ -35,27 +43,47 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="card-title">{{ auction_listings }}</h3>
-                <p class="card-text">Auction Items</p>
-            </div>
-        </div>
-    </div>
 </div>
 
 <div class="row mb-4">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center">
             <h3>My Listings</h3>
-            <div class="btn-group" role="group">
-                <a href="{% url 'create_listing' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Create New Listing
-                </a>
-                <a href="{% url 'inventory_management' %}" class="btn btn-outline-success">
-                    <i class="bi bi-box-seam"></i> Inventory Management
-                </a>
+            <a href="{% url 'create_listing' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create New Listing
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Filters</h5>
+                <form method="GET" class="row g-3">
+                    <div class="col-md-6">
+                        <label for="status-filter" class="form-label">Status</label>
+                        <select class="form-select" id="status-filter" name="status">
+                            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                            <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                            <option value="official" {% if status_filter == 'official' %}selected{% endif %}>Official</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="type-filter" class="form-label">Listing Type</label>
+                        <select class="form-select" id="type-filter" name="type">
+                            <option value="all" {% if type_filter == 'all' %}selected{% endif %}>All Types</option>
+                            <option value="buy_now" {% if type_filter == 'buy_now' %}selected{% endif %}>Buy Now</option>
+                            <option value="auction" {% if type_filter == 'auction' %}selected{% endif %}>Auction</option>
+                            <option value="both" {% if type_filter == 'both' %}selected{% endif %}>Both</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        <a href="{% url 'seller_dashboard' %}" class="btn btn-secondary">Clear Filters</a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -81,7 +109,11 @@
                             <span class="badge badge-both">Both</span>
                         {% endif %}
                         
-                        <span class="badge bg-secondary">{{ listing.get_status_display }}</span>
+                        {% if listing.status == 'draft' %}
+                            <span class="badge bg-warning">Draft</span>
+                        {% else %}
+                            <span class="badge bg-success">Official</span>
+                        {% endif %}
                     </div>
                     
                     <h5 class="listing-title">{{ listing.title }}</h5>
@@ -99,8 +131,16 @@
                     <div class="btn-group w-100" role="group">
                         <a href="{% url 'listing_detail' listing.slug %}" class="btn btn-outline-primary">View</a>
                         <a href="{% url 'edit_listing' listing.slug %}" class="btn btn-outline-secondary">Edit</a>
+                        {% if listing.status == 'draft' %}
+                            <a href="{% url 'make_listing_official' listing.slug %}" class="btn btn-outline-success">Make Official</a>
+                        {% else %}
+                            <form method="POST" action="{% url 'make_draft' listing.slug %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-warning">Return to Draft</button>
+                            </form>
+                        {% endif %}
                         {% if listing.listing_type == 'buy_now' and listing.available_stock > 0 %}
-                            <a href="{% url 'convert_to_auction' listing.slug %}" class="btn btn-outline-warning">Auction</a>
+                            <a href="{% url 'convert_to_auction' listing.slug %}" class="btn btn-outline-info">Auction</a>
                         {% endif %}
                     </div>
                 </div>
@@ -109,7 +149,7 @@
     {% empty %}
         <div class="col-12">
             <div class="alert alert-info">
-                <h4>No listings yet</h4>
+                <h4>No listings found</h4>
                 <p>Start selling by creating your first listing.</p>
                 <a href="{% url 'create_listing' %}" class="btn btn-primary">Create Listing</a>
             </div>

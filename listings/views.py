@@ -452,13 +452,35 @@ def make_listing_official(request, slug):
             listing.status = 'active'
             listing.save()
             messages.success(request, 'Listing is now official and visible in the store!')
-            return redirect('inventory_management')
+            return redirect('seller_dashboard')
         
         return render(request, 'listings/make_official.html', {'listing': listing})
     except Exception as e:
         logger.error(f"Error in make_listing_official: {e}", exc_info=True)
         messages.error(request, 'An error occurred while making the listing official.')
-        return redirect('inventory_management')
+        return redirect('seller_dashboard')
+
+@login_required
+def make_draft(request, slug):
+    """Make an official listing return to draft (not visible in store)"""
+    try:
+        if not request.user.is_seller:
+            messages.error(request, 'You need to enable seller mode first.')
+            return redirect('enable_seller_mode')
+        
+        listing = get_object_or_404(Listing, slug=slug, seller=request.user, status='active')
+        
+        if request.method == 'POST':
+            listing.status = 'draft'
+            listing.save()
+            messages.success(request, 'Listing is now a draft and not visible in the store.')
+            return redirect('seller_dashboard')
+        
+        return render(request, 'listings/make_draft.html', {'listing': listing})
+    except Exception as e:
+        logger.error(f"Error in make_draft: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while making the listing a draft.')
+        return redirect('seller_dashboard')
 
 def seed_categories_view(request):
     """Simple view to seed categories - accessible via URL for Render free tier"""

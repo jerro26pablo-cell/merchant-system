@@ -171,16 +171,33 @@ def seller_dashboard(request):
         from listings.models import Listing
         listings = Listing.objects.filter(seller=request.user).order_by('-created_at')
         
+        # Apply filters
+        status_filter = request.GET.get('status', 'all')
+        type_filter = request.GET.get('type', 'all')
+        
+        if status_filter != 'all':
+            if status_filter == 'draft':
+                listings = listings.filter(status='draft')
+            elif status_filter == 'official':
+                listings = listings.filter(status='active')
+        
+        if type_filter != 'all':
+            listings = listings.filter(listing_type=type_filter)
+        
         # Calculate statistics
         active_listings = listings.filter(status='active').count()
         buy_now_listings = listings.filter(listing_type='buy_now').count()
         auction_listings = listings.filter(listing_type='auction').count()
+        draft_listings = listings.filter(status='draft').count()
         
         context = {
             'listings': listings,
             'active_listings': active_listings,
             'buy_now_listings': buy_now_listings,
             'auction_listings': auction_listings,
+            'draft_listings': draft_listings,
+            'status_filter': status_filter,
+            'type_filter': type_filter,
         }
         
         return render(request, 'accounts/seller_dashboard.html', context)
