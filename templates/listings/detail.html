@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         {% else %}
                             <p class="text-muted">No bids yet.</p>
                         {% endif %}
-                    {% elif user.is_authenticated and listing.status in ['active', 'official'] %}
+                    {% elif user.is_authenticated and listing.status == 'active' %}
                         <form method="POST" action="{% url 'place_bid' listing.slug %}">
                             {% csrf_token %}
                             <div class="row">
