@@ -64,6 +64,9 @@ class Listing(models.Model):
     # Size specification
     size = models.ForeignKey(SizeSpecification, on_delete=models.SET_NULL, null=True, blank=True, related_name='listings')
     
+    # Shipping
+    shipping_address = models.TextField(blank=True, help_text=_('Shipping address for this listing'))
+    
     # Tracking
     view_count = models.IntegerField(default=0)
     original_listing = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='relistings')

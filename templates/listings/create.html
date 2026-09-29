@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load listing_filters %}
 
 {% block title %}Create Listing - Welcome Online Merchant{% endblock %}
 
@@ -49,12 +50,12 @@
                         </div>
                     </div>
                     
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
+                    <div class="row" id="price-fields">
+                        <div class="col-md-6 mb-3" id="buy-now-price-field">
                             <label for="id_buy_now_price" class="form-label">Buy Now Price ($)</label>
                             {{ form.buy_now_price }}
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-3" id="starting-bid-field">
                             <label for="id_starting_bid" class="form-label">Starting Bid ($)</label>
                             {{ form.starting_bid }}
                         </div>
@@ -66,12 +67,41 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label for="id_shipping_address" class="form-label">Shipping Address</label>
+                        <div class="mb-2">
+                            {% if user.buyer_profile and user.buyer_profile.shipping_address %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="use-saved-address" data-saved-address="{{ user.buyer_profile.shipping_address|escapejs }}">
+                                    <i class="bi bi-bookmark"></i> Use Saved Address
+                                </button>
+                            {% endif %}
+                        </div>
+                        {{ form.shipping_address }}
+                        <small class="text-muted">Optional - leave blank to use your default address</small>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label class="form-label">Images</label>
                         {{ image_formset.management_form }}
                         <div id="image-formset">
                             {% for form in image_formset %}
-                                <div class="image-form mb-3 p-3 border rounded">
-                                    {{ form.as_p }}
+                                <div class="image-form mb-3 p-3 border rounded" data-index="{{ forloop.counter0 }}">
+                                    <div class="mb-2">
+                                        <strong class="image-label">{% if forloop.first %}Main Photo (Thumbnail){% else %}{{ forloop.counter0|add:1|ordinal }} Photo{% endif %}</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="{{ form.image.id_for_label }}" class="form-label">Image</label>
+                                        {{ form.image }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="{{ form.alt_text.id_for_label }}" class="form-label">Alt Text</label>
+                                        {{ form.alt_text }}
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="{{ form.is_primary.id_for_label }}" class="form-label">
+                                            {{ form.is_primary }} Set as Main Photo
+                                        </label>
+                                    </div>
+                                    {{ form.sort_order }}
                                 </div>
                             {% endfor %}
                         </div>
@@ -125,10 +155,58 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle listing type field toggling
+    const listingTypeSelect = document.getElementById('id_listing_type');
+    const buyNowPriceField = document.getElementById('buy-now-price-field');
+    const startingBidField = document.getElementById('starting-bid-field');
+    
+    function togglePriceFields() {
+        const listingType = listingTypeSelect.value;
+        
+        if (listingType === 'buy_now') {
+            // Show buy now price, hide starting bid
+            buyNowPriceField.style.display = 'block';
+            startingBidField.style.display = 'none';
+        } else if (listingType === 'auction') {
+            // Show starting bid, hide buy now price
+            buyNowPriceField.style.display = 'none';
+            startingBidField.style.display = 'block';
+        } else {
+            // Both: show both fields
+            buyNowPriceField.style.display = 'block';
+            startingBidField.style.display = 'block';
+        }
+    }
+    
+    // Initialize on page load
+    if (listingTypeSelect) {
+        togglePriceFields();
+        listingTypeSelect.addEventListener('change', togglePriceFields);
+    }
+    
+    // Handle saved address button
+    const useSavedAddressBtn = document.getElementById('use-saved-address');
+    const shippingAddressField = document.getElementById('id_shipping_address');
+    
+    if (useSavedAddressBtn && shippingAddressField) {
+        useSavedAddressBtn.addEventListener('click', function() {
+            const savedAddress = this.getAttribute('data-saved-address');
+            if (savedAddress) {
+                shippingAddressField.value = savedAddress;
+            }
+        });
+    }
+    
     // Handle image formset
     const addImageButton = document.getElementById('add-image');
     const imageFormset = document.getElementById('image-formset');
     const totalForms = document.getElementById('id_images-TOTAL_FORMS');
+    
+    function getOrdinal(n) {
+        const s = ["th", "st", "nd", "rd"];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
     
     addImageButton.addEventListener('click', function() {
         const formCount = parseInt(totalForms.value);
@@ -141,6 +219,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear input values
         const inputs = newForm.querySelectorAll('input');
         inputs.forEach(input => input.value = '');
+        
+        // Update the label based on the index
+        const labelElement = newForm.querySelector('.image-label');
+        if (labelElement) {
+            const ordinal = getOrdinal(formCount + 1);
+            labelElement.textContent = `${ordinal} Photo`;
+        }
+        
+        // Update data-index attribute
+        newForm.setAttribute('data-index', formCount);
         
         imageFormset.appendChild(newForm);
         totalForms.value = formCount + 1;

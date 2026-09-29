@@ -473,8 +473,13 @@
                         <div class="sidebar-section-title">My Account</div>
                         <ul class="sidebar-nav">
                             <li class="sidebar-nav-item">
+                                <a href="{% url 'profile' %}" class="sidebar-nav-link">
+                                    <i class="bi bi-person"></i> My Profile
+                                </a>
+                            </li>
+                            <li class="sidebar-nav-item">
                                 <a href="{% url 'buyer_dashboard' %}" class="sidebar-nav-link">
-                                    <i class="bi bi-person"></i> Buyer Dashboard
+                                    <i class="bi bi-cart"></i> Buyer Dashboard
                                 </a>
                             </li>
                             <li class="sidebar-nav-item">

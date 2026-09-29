@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}My Bids - Welcome Online Merchant{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">My Bids</h1>
+        <p class="lead">Track all your bidding activity</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% if bids %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Listing</th>
+                            <th>Image</th>
+                            <th>Bid Amount</th>
+                            <th>Status</th>
+                            <th>Time Placed</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bid in bids %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'listing_detail' bid.listing.slug %}">
+                                        <strong>{{ bid.listing.title }}</strong>
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">{{ bid.listing.category.name }}</small>
+                                </td>
+                                <td>
+                                    {% if bid.listing.primary_image %}
+                                        <img src="{{ bid.listing.primary_image.image.url }}" 
+                                             class="rounded" 
+                                             style="width: 50px; height: 50px; object-fit: cover;" 
+                                             alt="{{ bid.listing.title }}">
+                                    {% else %}
+                                        <img src="https://via.placeholder.com/50x50?text=No+Image" 
+                                             class="rounded" 
+                                             style="width: 50px; height: 50px; object-fit: cover;" 
+                                             alt="{{ bid.listing.title }}">
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>${{ bid.amount }}</strong>
+                                </td>
+                                <td>
+                                    {% if bid.status == 'active' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif bid.status == 'outbid' %}
+                                        <span class="badge bg-danger">Outbid</span>
+                                    {% elif bid.status == 'won' %}
+                                        <span class="badge bg-primary">Won</span>
+                                    {% elif bid.status == 'cancelled' %}
+                                        <span class="badge bg-secondary">Cancelled</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ bid.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ bid.created_at|date:"M d, Y H:i" }}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'listing_detail' bid.listing.slug %}" class="btn btn-outline-primary">
+                                            View Listing
+                                        </a>
+                                        {% if bid.status == 'active' %}
+                                            <a href="{% url 'request_bid_cancellation' bid.id %}" class="btn btn-outline-danger">
+                                                Cancel
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <h4>No bids yet</h4>
+                <p>You haven't placed any bids yet. Start browsing the catalog to find items to bid on!</p>
+                <a href="{% url 'catalog' %}" class="btn btn-primary">Browse Catalog</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

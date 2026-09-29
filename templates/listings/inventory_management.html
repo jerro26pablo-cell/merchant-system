@@ -67,7 +67,7 @@
             <h3>Inventory Items</h3>
             <div class="btn-group">
                 <a href="{% url 'create_listing' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Add New Product
+                    <i class="bi bi-plus-circle"></i> Add Item
                 </a>
                 <a href="{% url 'create_listing' %}?draft=true" class="btn btn-outline-success">
                     <i class="bi bi-file-earmark"></i> Create Draft
@@ -193,7 +193,7 @@
                         <div class="alert alert-info">
                             <h4>No inventory items</h4>
                             <p>Start by creating your first listing.</p>
-                            <a href="{% url 'create_listing' %}" class="btn btn-primary">Create Listing</a>
+                            <a href="{% url 'create_listing' %}" class="btn btn-primary">Add Item</a>
                         </div>
                     </td>
                 </tr>
@@ -209,7 +209,7 @@
                 <h5 class="card-title">Quick Actions</h5>
                 <div class="btn-group" role="group">
                     <a href="{% url 'seller_dashboard' %}" class="btn btn-outline-primary">Back to Dashboard</a>
-                    <a href="{% url 'create_listing' %}" class="btn btn-outline-success">Add Product</a>
+                    <a href="{% url 'create_listing' %}" class="btn btn-outline-success">Add Item</a>
                 </div>
             </div>
         </div>
