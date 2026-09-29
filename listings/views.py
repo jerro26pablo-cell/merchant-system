@@ -149,6 +149,7 @@ def create_listing(request):
         
         if request.method == 'POST':
             form = ListingForm(request.POST, request.FILES)
+            image_formset = ListingImageFormSet(request.POST, request.FILES)
             save_as_draft = request.POST.get('save_as_draft') == 'true'
             
             if form.is_valid():
