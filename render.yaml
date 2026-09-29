@@ -14,3 +14,9 @@ services:
         value: "*.onrender.com"
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: USE_S3
+        value: "false"
+    disk:
+      name: media-disk
+      mountPath: /opt/render/project/src/media
+      sizeGB: 1

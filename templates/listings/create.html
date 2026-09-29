@@ -282,9 +282,46 @@
                     </div>
                 </div>
                 
-                <div class="mb-3">
+                <div class="row" id="auction-fields" style="display: none;">
+                    <div class="col-md-6 mb-3">
+                        <label for="id_reserve_price" class="form-label">🎯 Reserve Price ($)</label>
+                        {{ form.reserve_price }}
+                        <small class="text-muted">Minimum price to sell (optional)</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="id_minimum_increment" class="form-label">📈 Minimum Bid Increment ($)</label>
+                        {{ form.minimum_increment }}
+                        <small class="text-muted">Minimum amount for each bid</small>
+                    </div>
+                </div>
+                
+                <div class="row" id="auction-date-fields" style="display: none;">
+                    <div class="col-md-6 mb-3">
+                        <label for="id_auction_start" class="form-label">📅 Auction Start Date & Time</label>
+                        {{ form.auction_start }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="id_auction_end" class="form-label">⏰ Auction End Date & Time</label>
+                        {{ form.auction_end }}
+                    </div>
+                </div>
+                
+                <div class="mb-3" id="size-section">
                     <label for="id_size" class="form-label">📏 Size</label>
                     {{ form.size }}
+                    <small class="text-muted">Select a size if applicable to your product</small>
+                </div>
+                
+                <div class="mb-3" id="clothing-type-section" style="display: none;">
+                    <label for="clothing_type" class="form-label">👕 Type of Clothing</label>
+                    <select class="form-select" id="clothing_type" name="clothing_type">
+                        <option value="">Select type...</option>
+                        <option value="tshirt">T-Shirt</option>
+                        <option value="pants">Pants</option>
+                        <option value="dress">Dress</option>
+                        <option value="jacket">Jacket</option>
+                        <option value="shoes">Shoes</option>
+                    </select>
                 </div>
             </div>
             
@@ -397,6 +434,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const listingTypeSelect = document.getElementById('id_listing_type');
     const buyNowPriceField = document.getElementById('buy-now-price-field');
     const startingBidField = document.getElementById('starting-bid-field');
+    const auctionFields = document.getElementById('auction-fields');
+    const auctionDateFields = document.getElementById('auction-date-fields');
     
     function togglePriceFields() {
         const listingType = listingTypeSelect.value;
@@ -404,18 +443,44 @@ document.addEventListener('DOMContentLoaded', function() {
         if (listingType === 'buy_now') {
             buyNowPriceField.style.display = 'block';
             startingBidField.style.display = 'none';
+            auctionFields.style.display = 'none';
+            auctionDateFields.style.display = 'none';
         } else if (listingType === 'auction') {
             buyNowPriceField.style.display = 'none';
             startingBidField.style.display = 'block';
+            auctionFields.style.display = 'block';
+            auctionDateFields.style.display = 'block';
         } else {
             buyNowPriceField.style.display = 'block';
             startingBidField.style.display = 'block';
+            auctionFields.style.display = 'block';
+            auctionDateFields.style.display = 'block';
         }
     }
     
     if (listingTypeSelect) {
         togglePriceFields();
         listingTypeSelect.addEventListener('change', togglePriceFields);
+    }
+    
+    // Handle category-based size selection
+    const categorySelect = document.getElementById('id_category');
+    const sizeSection = document.getElementById('size-section');
+    const clothingTypeSection = document.getElementById('clothing-type-section');
+    
+    function handleCategoryChange() {
+        const categoryValue = categorySelect.value;
+        // Check if category is clothing (you may need to adjust this based on your category IDs)
+        if (categoryValue === 'clothing' || categoryValue === '2') {
+            clothingTypeSection.style.display = 'block';
+        } else {
+            clothingTypeSection.style.display = 'none';
+        }
+    }
+    
+    if (categorySelect) {
+        handleCategoryChange();
+        categorySelect.addEventListener('change', handleCategoryChange);
     }
     
     // Handle saved address button

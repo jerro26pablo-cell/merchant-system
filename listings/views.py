@@ -224,7 +224,11 @@ def edit_listing(request, slug):
                 image_formset.save()
             
             messages.success(request, 'Listing updated successfully!')
-            return redirect('listing_detail', slug=listing.slug)
+            # Redirect to inventory if it's a draft, otherwise to detail page
+            if listing.status == 'draft':
+                return redirect('inventory_management')
+            else:
+                return redirect('listing_detail', slug=listing.slug)
     else:
         form = ListingForm(instance=listing)
         image_formset = ListingImageFormSet(instance=listing)
