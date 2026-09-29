@@ -119,25 +119,8 @@ else:
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Use Cloudinary for media storage in production (free tier available)
-# For Render free tier, Cloudinary is recommended as it's free and persistent
-USE_CLOUDINARY = config('USE_CLOUDINARY', default=False, cast=bool)
-
-if USE_CLOUDINARY:
-    import cloudinary
-    import cloudinary.uploader
-    import cloudinary.api
-
-    CLOUDINARY_URL = config('CLOUDINARY_URL')
-    cloudinary.config(cloud_name=config('CLOUDINARY_CLOUD_NAME'),
-                     api_key=config('CLOUDINARY_API_KEY'),
-                     api_secret=config('CLOUDINARY_API_SECRET'))
-
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    MEDIA_URL = ''
-    MEDIA_ROOT = ''
-elif 'RENDER' in os.environ:
-    # Render free tier fallback - local storage (ephemeral, won't persist)
+# Use local storage on Render with mounted disk (same as working FastAPI system)
+if 'RENDER' in os.environ:
     MEDIA_ROOT = Path('/opt/render/project/src/media')
     MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
 
