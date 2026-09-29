@@ -132,15 +132,37 @@ def listing_detail(request, slug):
         except Exception as view_error:
             logger.warning(f"Could not track view: {view_error}")
 
-        # Get similar listings
+        # Get similar listings (by price, same category)
         similar_listings = Listing.objects.filter(
             category=listing.category,
             status='active'
-        ).exclude(id=listing.id)[:4]
+        ).exclude(id=listing.id).order_by('buy_now_price')[:4]
+
+        # Get category price stats
+        from django.db.models import Avg, Min, Max, Count
+        category_stats = Listing.objects.filter(
+            category=listing.category,
+            status='active'
+        ).aggregate(
+            min_price=Min('buy_now_price'),
+            avg_price=Avg('buy_now_price'),
+            max_price=Max('buy_now_price'),
+            count=Count('id')
+        )
+
+        # Check if wishlisted
+        is_wishlisted = False
+        if request.user.is_authenticated:
+            is_wishlisted = Wishlist.objects.filter(
+                user=request.user,
+                listing=listing
+            ).exists()
 
         context = {
             'listing': listing,
             'similar_listings': similar_listings,
+            'category_stats': category_stats,
+            'is_wishlisted': is_wishlisted,
         }
 
         return render(request, 'listings/detail.html', context)
@@ -614,52 +636,65 @@ def add_to_wishlist(request, slug):
     """Add listing to wishlist (acts as add-to-cart)"""
     try:
         listing = get_object_or_404(Listing, slug=slug)
-        
+
         # Prevent seller from adding their own items
         if request.user == listing.seller:
+            if request.headers.get('Content-Type') == 'application/json':
+                return JsonResponse({'success': False, 'message': 'You cannot add your own listing to wishlist.'}, status=400)
             messages.error(request, 'You cannot add your own listing to wishlist.')
             return redirect('listing_detail', slug=slug)
-        
+
         # Only buy-now items can be added to wishlist
         if not listing.is_buy_now:
+            if request.headers.get('Content-Type') == 'application/json':
+                return JsonResponse({'success': False, 'message': 'Only buy-now items can be added to wishlist.'}, status=400)
             messages.error(request, 'Only buy-now items can be added to wishlist.')
             return redirect('listing_detail', slug=slug)
         
         if listing.available_stock <= 0:
+            if request.headers.get('Content-Type') == 'application/json':
+                return JsonResponse({'success': False, 'message': 'This item is out of stock.'}, status=400)
             messages.error(request, 'This item is out of stock.')
             return redirect('listing_detail', slug=slug)
-        
-        # Get quantity from POST or default to 1 for GET requests
-        if request.method == 'POST':
-            quantity = int(request.POST.get('quantity', 1))
-        else:
-            quantity = 1
-        
+
+        # Get quantity from POST or default to 1
+        quantity = int(request.POST.get('quantity', 1))
+
         if quantity < 1:
+            if request.headers.get('Content-Type') == 'application/json':
+                return JsonResponse({'success': False, 'message': 'Quantity must be at least 1.'}, status=400)
             messages.error(request, 'Quantity must be at least 1.')
             return redirect('listing_detail', slug=slug)
-        
+
         if quantity > listing.available_stock:
+            if request.headers.get('Content-Type') == 'application/json':
+                return JsonResponse({'success': False, 'message': f'Only {listing.available_stock} items available.'}, status=400)
             messages.error(request, f'Only {listing.available_stock} items available.')
             return redirect('listing_detail', slug=slug)
-        
+
         # Add or update wishlist item
         wishlist_item, created = Wishlist.objects.get_or_create(
             user=request.user,
             listing=listing,
             defaults={'quantity': quantity}
         )
-        
+
         if not created:
             # Update quantity if already in wishlist
             new_total = wishlist_item.quantity + quantity
             if new_total > listing.available_stock:
+                if request.headers.get('Content-Type') == 'application/json':
+                    return JsonResponse({'success': False, 'message': f'Cannot add more than {listing.available_stock} items total.'}, status=400)
                 messages.error(request, f'Cannot add more than {listing.available_stock} items total.')
                 return redirect('listing_detail', slug=slug)
             wishlist_item.quantity = new_total
             wishlist_item.save()
-        
+
         logger.info(f"User {request.user.id} added {listing.slug} to wishlist (qty: {quantity})")
+
+        if request.headers.get('Content-Type') == 'application/json':
+            return JsonResponse({'success': True, 'quantity': wishlist_item.quantity})
+
         messages.success(request, f'Added to wishlist! Total: {wishlist_item.quantity} items')
         return redirect('wishlist')
         
@@ -716,6 +751,19 @@ def update_wishlist_quantity(request, item_id):
         
     except Exception as e:
         logger.error(f"Error in update_wishlist_quantity: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'message': 'An error occurred.'}, status=500)
+
+@login_required
+def remove_from_wishlist_by_listing(request, listing_id):
+    """Remove item from wishlist by listing_id (for toggle functionality)"""
+    try:
+        wishlist_item = Wishlist.objects.get(listing_id=listing_id, user=request.user)
+        wishlist_item.delete()
+        return JsonResponse({'success': True})
+    except Wishlist.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Item not in wishlist'}, status=404)
+    except Exception as e:
+        logger.error(f"Error in remove_from_wishlist_by_listing: {e}", exc_info=True)
         return JsonResponse({'success': False, 'message': 'An error occurred.'}, status=500)
 
 @login_required
@@ -886,6 +934,38 @@ def start_conversation(request, slug):
         logger.error(f"Error in start_conversation: {e}", exc_info=True)
         messages.error(request, 'An error occurred while starting the conversation.')
         return redirect('listing_detail', slug=slug)
+
+@login_required
+def seller_store(request, seller_id):
+    """View seller's store page"""
+    try:
+        seller = get_object_or_404(User, id=seller_id, seller_enabled=True)
+
+        # Get seller's active listings
+        listings = Listing.objects.filter(
+            seller=seller,
+            status='active'
+        ).select_related('category').prefetch_related('images').order_by('-created_at')
+
+        # Get seller stats
+        active_count = listings.count()
+        sold_count = Listing.objects.filter(
+            seller=seller,
+            status='sold'
+        ).count()
+
+        context = {
+            'seller': seller,
+            'listings': listings,
+            'active_count': active_count,
+            'sold_count': sold_count,
+        }
+
+        return render(request, 'listings/seller_store.html', context)
+    except Exception as e:
+        logger.error(f"Error in seller_store: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while loading the store.')
+        return redirect('catalog')
 
 def seed_categories_view(request):
     """Simple view to seed categories - accessible via URL for Render free tier"""
