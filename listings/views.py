@@ -5,6 +5,7 @@ from django.db.models import Q, Count, Case, When, F, DecimalField
 from django.core.paginator import Paginator
 from django.db.models.functions import Coalesce
 from decimal import Decimal, InvalidOperation
+from django.http import JsonResponse
 from .models import Listing, ListingImage, ListingAttribute, InventoryLog
 from .forms import ListingForm, ListingImageFormSet
 import logging
@@ -434,3 +435,61 @@ def make_listing_official(request, slug):
         logger.error(f"Error in make_listing_official: {e}", exc_info=True)
         messages.error(request, 'An error occurred while making the listing official.')
         return redirect('inventory_management')
+
+def seed_categories_view(request):
+    """Simple view to seed categories - accessible via URL for Render free tier"""
+    try:
+        from categories.models import Category, SizeSystem, SizeSpecification
+        
+        categories_data = [
+            {'name': 'Electronics', 'slug': 'electronics', 'category_type': 'main', 'description': 'Electronic devices and accessories'},
+            {'name': 'Clothing', 'slug': 'clothing', 'category_type': 'main', 'description': 'Clothing and apparel'},
+            {'name': 'Home & Garden', 'slug': 'home-garden', 'category_type': 'main', 'description': 'Home and garden items'},
+            {'name': 'Sports', 'slug': 'sports', 'category_type': 'main', 'description': 'Sports equipment and accessories'},
+            {'name': 'Books', 'slug': 'books', 'category_type': 'main', 'description': 'Books and publications'},
+        ]
+        
+        created_count = 0
+        existing_count = 0
+        
+        for cat_data in categories_data:
+            category, created = Category.objects.get_or_create(
+                slug=cat_data['slug'],
+                defaults=cat_data
+            )
+            if created:
+                created_count += 1
+            else:
+                existing_count += 1
+        
+        # Create size system for clothing
+        size_system, created = SizeSystem.objects.get_or_create(
+            name='Clothing Sizes',
+            system_type='alpha',
+            defaults={'name': 'Clothing Sizes', 'system_type': 'alpha'}
+        )
+        
+        if created:
+            sizes = [
+                {'size_value': 'S', 'display_name': 'Small'},
+                {'size_value': 'M', 'display_name': 'Medium'},
+                {'size_value': 'L', 'display_name': 'Large'},
+                {'size_value': 'XL', 'display_name': 'Extra Large'},
+            ]
+            for size_data in sizes:
+                SizeSpecification.objects.get_or_create(
+                    size_system=size_system,
+                    size_value=size_data['size_value'],
+                    defaults=size_data
+                )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Categories seeded: {created_count} created, {existing_count} already existed',
+            'total_categories': Category.objects.count()
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

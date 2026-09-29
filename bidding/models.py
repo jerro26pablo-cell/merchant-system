@@ -255,3 +255,162 @@ class AuctionExtension(models.Model):
     
     def __str__(self):
         return f"{self.listing.title} extended by {self.extension_seconds}s"
+
+class SecondChanceOffer(models.Model):
+    OFFER_STATUS_CHOICES = [
+        ('pending', _('Pending')),
+        ('accepted', _('Accepted')),
+        ('declined', _('Declined')),
+        ('expired', _('Expired')),
+    ]
+    
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='second_chance_offers')
+    buyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='second_chance_offers')
+    offer_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    original_bid = models.ForeignKey(Bid, on_delete=models.CASCADE, related_name='second_chance_offers')
+    status = models.CharField(max_length=20, choices=OFFER_STATUS_CHOICES, default='pending')
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    declined_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'second_chance_offers'
+        verbose_name = _('Second Chance Offer')
+        verbose_name_plural = _('Second Chance Offers')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['listing', 'status']),
+            models.Index(fields=['buyer', 'status']),
+            models.Index(fields=['expires_at']),
+        ]
+    
+    def __str__(self):
+        return f"Second chance offer for {self.listing.title} to {self.buyer.email} - ${self.offer_amount}"
+    
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at and self.status == 'pending'
+    
+    def accept_offer(self):
+        """Accept the second chance offer and create an order"""
+        if self.status != 'pending':
+            raise ValueError('Offer is not in pending status')
+        
+        if self.is_expired:
+            self.status = 'expired'
+            self.save()
+            raise ValueError('Offer has expired')
+        
+        self.status = 'accepted'
+        self.accepted_at = timezone.now()
+        self.save()
+        
+        # Create order from the accepted offer
+        from orders.models import Order
+        order = Order.objects.create(
+            buyer=self.buyer,
+            listing=self.listing,
+            order_type='second_chance',
+            total_amount=self.offer_amount,
+            second_chance_offer=self
+        )
+        
+        # Update listing status
+        self.listing.status = 'sold'
+        self.listing.save()
+        
+        # Update original bid status
+        self.original_bid.status = 'won'
+        self.original_bid.save()
+        
+        # Notify seller
+        from notifications.models import Notification
+        Notification.objects.create(
+            user=self.listing.seller,
+            notification_type='order_update',
+            title='Second chance offer accepted',
+            message=f'{self.buyer.email} has accepted the second chance offer for {self.listing.title} at ${self.offer_amount}',
+            related_listing=self.listing
+        )
+        
+        return order
+    
+    def decline_offer(self):
+        """Decline the second chance offer"""
+        if self.status != 'pending':
+            raise ValueError('Offer is not in pending status')
+        
+        self.status = 'declined'
+        self.declined_at = timezone.now()
+        self.save()
+        
+        # Notify seller that offer was declined
+        from notifications.models import Notification
+        Notification.objects.create(
+            user=self.listing.seller,
+            notification_type='order_update',
+            title='Second chance offer declined',
+            message=f'{self.buyer.email} has declined the second chance offer for {self.listing.title}',
+            related_listing=self.listing
+        )
+        
+        # Check if listing should be available for relisting
+        if not SecondChanceOffer.objects.filter(
+            listing=self.listing,
+            status='pending'
+        ).exists():
+            # No more pending offers, mark listing for potential relist
+            self.listing.status = 'ended'
+            self.listing.save()
+    
+    @classmethod
+    def create_second_chance_offer(cls, listing):
+        """Create a second chance offer for the second-highest bidder when reserve not met"""
+        # Check if auction ended with reserve not met
+        if listing.status != 'ended' or not listing.reserve_price:
+            return None
+        
+        # Check if reserve was not met
+        highest_bid = listing.bids.filter(status='winning').first()
+        if not highest_bid or highest_bid.amount >= listing.reserve_price:
+            return None
+        
+        # Find second-highest bidder
+        second_highest_bid = listing.bids.filter(
+            status__in=['active', 'outbid']
+        ).exclude(id=highest_bid.id).order_by('-amount').first()
+        
+        if not second_highest_bid:
+            return None
+        
+        # Check if offer already exists for this bidder
+        if cls.objects.filter(
+            listing=listing,
+            buyer=second_highest_bid.bidder,
+            status='pending'
+        ).exists():
+            return None
+        
+        # Create the offer
+        offer = cls.objects.create(
+            listing=listing,
+            buyer=second_highest_bid.bidder,
+            offer_amount=second_highest_bid.amount,
+            original_bid=second_highest_bid,
+            expires_at=timezone.now() + timezone.timedelta(hours=48)  # 48 hour expiration
+        )
+        
+        # Notify the buyer
+        from notifications.models import Notification
+        Notification.objects.create(
+            user=second_highest_bid.bidder,
+            notification_type='won_auction',
+            title='Second chance offer available',
+            message=f'You have a second chance to buy {listing.title} for ${second_highest_bid.amount:.2f}. Offer expires in 48 hours.',
+            related_listing=listing
+        )
+        
+        return offer
