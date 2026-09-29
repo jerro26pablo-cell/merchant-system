@@ -178,7 +178,7 @@ def seller_dashboard(request):
         if status_filter != 'all':
             if status_filter == 'draft':
                 listings = listings.filter(status='draft')
-            elif status_filter == 'official':
+            elif status_filter == 'active':
                 listings = listings.filter(status='active')
         
         if type_filter != 'all':

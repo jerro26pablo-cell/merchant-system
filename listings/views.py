@@ -115,7 +115,7 @@ def listing_catalog(request):
 
 def listing_detail(request, slug):
     try:
-        # Allow viewing any listing that the user owns or is active/official
+        # Allow viewing any listing that the user owns or is active
         listing = get_object_or_404(Listing, slug=slug)
         
         # If not the seller, only show active listings
@@ -445,30 +445,30 @@ def inventory_logs(request, slug):
     return render(request, 'listings/inventory_logs.html', {'listing': listing, 'logs': logs})
 
 @login_required
-def make_listing_official(request, slug):
-    """Make a draft listing official (visible in store)"""
+def make_listing_active(request, slug):
+    """Make a draft listing active (visible in store)"""
     try:
         if not request.user.is_seller:
             messages.error(request, 'You need to enable seller mode first.')
             return redirect('enable_seller_mode')
-        
+
         listing = get_object_or_404(Listing, slug=slug, seller=request.user, status='draft')
-        
+
         if request.method == 'POST':
             listing.status = 'active'
             listing.save()
-            messages.success(request, 'Listing is now official and visible in the store!')
+            messages.success(request, 'Listing is now active and visible in the store!')
             return redirect('seller_dashboard')
-        
-        return render(request, 'listings/make_official.html', {'listing': listing})
+
+        return render(request, 'listings/make_active.html', {'listing': listing})
     except Exception as e:
-        logger.error(f"Error in make_listing_official: {e}", exc_info=True)
-        messages.error(request, 'An error occurred while making the listing official.')
+        logger.error(f"Error in make_listing_active: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while making the listing active.')
         return redirect('seller_dashboard')
 
 @login_required
 def make_draft(request, slug):
-    """Make an official listing return to draft (not visible in store)"""
+    """Make an active listing return to draft (not visible in store)"""
     try:
         if not request.user.is_seller:
             messages.error(request, 'You need to enable seller mode first.')

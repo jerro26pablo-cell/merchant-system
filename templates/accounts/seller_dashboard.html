@@ -175,7 +175,7 @@ function adjustQuantity(listingId, change) {
                         <select class="form-select form-select-sm" id="status-filter" name="status">
                             <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
                             <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
-                            <option value="official" {% if status_filter == 'official' %}selected{% endif %}>Official</option>
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -249,7 +249,7 @@ function adjustQuantity(listingId, change) {
                         <a href="{% url 'listing_detail' listing.slug %}" class="btn btn-outline-primary btn-sm">View</a>
                         <a href="{% url 'edit_listing' listing.slug %}" class="btn btn-outline-secondary btn-sm">Edit</a>
                         {% if listing.status == 'draft' %}
-                            <a href="{% url 'make_listing_official' listing.slug %}" class="btn btn-outline-success btn-sm">Official</a>
+                            <a href="{% url 'make_listing_active' listing.slug %}" class="btn btn-outline-success btn-sm">Active</a>
                         {% else %}
                             <form method="POST" action="{% url 'make_draft' listing.slug %}" style="display: inline;">
                                 {% csrf_token %}
