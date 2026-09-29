@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load listing_filters %}
 
 {% block title %}Catalog - Welcome Online Merchant{% endblock %}
 
@@ -116,9 +117,9 @@
                                             <p class="listing-meta">
                                                 <i class="bi bi-clock"></i> 
                                                 {% if listing.time_remaining.days > 0 %}
-                                                    {{ listing.time_remaining.days }}d {{ listing.time_remaining.seconds|add:0|divisibleby:3600|yesno:"" }}h
+                                                    {{ listing.time_remaining.days }}d {{ listing.time_remaining.seconds|seconds_to_hours }}h
                                                 {% else %}
-                                                    {% widthratio listing.time_remaining.seconds 3600 1 %}h {% widthratio listing.time_remaining.seconds 60 1|add:0|divisibleby:60 1 %}m
+                                                    {{ listing.time_remaining.seconds|seconds_to_hours }}h {{ listing.time_remaining.seconds|seconds_to_minutes }}m
                                                 {% endif %}
                                             </p>
                                         {% endif %}
