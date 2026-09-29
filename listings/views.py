@@ -814,9 +814,8 @@ def conversation_detail(request, conversation_id):
     """View and send messages in a conversation"""
     try:
         conversation = get_object_or_404(
-            Conversation,
-            id=conversation_id,
-            Q(buyer=request.user) | Q(seller=request.user)
+            Conversation.objects.filter(Q(buyer=request.user) | Q(seller=request.user)),
+            id=conversation_id
         )
         
         # Mark messages as read
