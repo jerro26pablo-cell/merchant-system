@@ -118,8 +118,8 @@ def listing_detail(request, slug):
         # Allow viewing any listing that the user owns or is active/official
         listing = get_object_or_404(Listing, slug=slug)
         
-        # If not the seller, only show active/official listings
-        if request.user != listing.seller and listing.status not in ['active', 'official']:
+        # If not the seller, only show active listings
+        if request.user != listing.seller and listing.status != 'active':
             messages.error(request, 'This listing is not currently available.')
             return redirect('catalog')
         
@@ -132,7 +132,7 @@ def listing_detail(request, slug):
         # Get similar listings
         similar_listings = Listing.objects.filter(
             category=listing.category,
-            status__in=['active', 'official']
+            status='active'
         ).exclude(id=listing.id)[:4]
         
         context = {
