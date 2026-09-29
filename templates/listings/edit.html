@@ -280,7 +280,7 @@
                     {% for form in image_formset %}
                         <div class="image-form" data-index="{{ forloop.counter0 }}">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <strong class="image-label">{% if forloop.first %}📸 Main Photo (Thumbnail){% else %}📷 {{ forloop.counter0|add:1|ordinal }} Photo{% endif %}</strong>
+                                <strong class="image-label">{% if forloop.first %}📸 Main Photo (Thumbnail){% else %}📷 Photo {{ forloop.counter0|add:1 }}{% endif %}</strong>
                                 {% if form.instance.id %}
                                     <button type="button" class="delete-image-btn" onclick="this.closest('.image-form').remove();">
                                         <i class="bi bi-trash"></i> Remove

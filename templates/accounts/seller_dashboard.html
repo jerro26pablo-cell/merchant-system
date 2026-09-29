@@ -35,6 +35,21 @@
 
 {% block extra_js %}
 <script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 function adjustQuantity(listingId, change) {
     const stockElement = document.getElementById(`stock-${listingId}`);
     const currentStock = parseInt(stockElement.textContent);
@@ -48,16 +63,23 @@ function adjustQuantity(listingId, change) {
     const formData = new FormData();
     formData.append('listing_id', listingId);
     formData.append('change', change);
-    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
     fetch('{% url "adjust_quantity" %}', {
         method: 'POST',
         body: formData,
         headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken')
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.message || 'Error adjusting quantity');
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             stockElement.textContent = data.new_stock;
@@ -79,7 +101,7 @@ function adjustQuantity(listingId, change) {
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error adjusting quantity');
+        alert(error.message || 'Error adjusting quantity');
     });
 }
 </script>
@@ -181,7 +203,7 @@ function adjustQuantity(listingId, change) {
         <div class="col-md-4 col-lg-3 mb-3">
             <div class="card listing-card h-100">
                 {% if listing.primary_image %}
-                    <img src="{{ listing.primary_image.image.url }}" class="card-img-top" alt="{{ listing.primary_image.alt_text|default:listing.title }}">
+                    <img src="{{ listing.primary_image.image.url }}" class="card-img-top" alt="{{ listing.primary_image.alt_text|default:listing.title }}" onerror="this.src='https://via.placeholder.com/200x120?text=Image+Not+Available';">
                 {% else %}
                     <img src="https://via.placeholder.com/200x120?text=No+Image" class="card-img-top" alt="{{ listing.title }}">
                 {% endif %}
@@ -237,6 +259,10 @@ function adjustQuantity(listingId, change) {
                         {% if listing.listing_type == 'buy_now' and listing.available_stock > 0 %}
                             <a href="{% url 'convert_to_auction' listing.slug %}" class="btn btn-outline-info btn-sm">Auction</a>
                         {% endif %}
+                        <form method="POST" action="{% url 'delete_listing' listing.slug %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this listing? This action cannot be undone.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                        </form>
                     </div>
                 </div>
             </div>

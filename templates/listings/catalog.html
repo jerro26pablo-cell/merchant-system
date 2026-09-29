@@ -112,7 +112,7 @@
                         <div class="card listing-card h-100">
                             <div class="position-relative">
                                 {% if listing.primary_image %}
-                                    <img src="{{ listing.primary_image.image.url }}" class="listing-image" alt="{{ listing.primary_image.alt_text|default:listing.title }}">
+                                    <img src="{{ listing.primary_image.image.url }}" class="listing-image" alt="{{ listing.primary_image.alt_text|default:listing.title }}" onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Available';">
                                 {% else %}
                                     <img src="https://via.placeholder.com/300x200?text=No+Image" class="listing-image" alt="{{ listing.title }}">
                                 {% endif %}
@@ -193,12 +193,12 @@
                                         <a href="{% url 'listing_detail' listing.slug %}" class="btn btn-primary">
                                             <i class="bi bi-eye"></i> View
                                         </a>
-                                        {% if listing.is_auction %}
+                                        {% if listing.is_auction and request.user != listing.seller %}
                                             <a href="{% url 'listing_detail' listing.slug %}#bidding" class="btn btn-outline-primary">
                                                 <i class="bi bi-gavel"></i> Bid
                                             </a>
                                         {% endif %}
-                                        {% if listing.is_buy_now %}
+                                        {% if listing.is_buy_now and request.user != listing.seller %}
                                             <a href="{% url 'listing_detail' listing.slug %}#buy-now" class="btn btn-outline-success">
                                                 <i class="bi bi-cart"></i> Buy
                                             </a>
