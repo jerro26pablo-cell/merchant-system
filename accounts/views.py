@@ -14,7 +14,7 @@ def register(request):
             BuyerProfile.objects.get_or_create(user=user)
             login(request, user)
             messages.success(request, 'Registration successful! You are now a buyer.')
-            return redirect('home')
+            return redirect('buyer_dashboard')
     else:
         form = UserRegistrationForm()
     return render(request, 'accounts/register.html', {'form': form})
@@ -40,6 +40,20 @@ def user_logout(request):
 @login_required
 def profile(request):
     return render(request, 'accounts/profile.html')
+
+@login_required
+def buyer_dashboard(request):
+    """Buyer dashboard - shows purchase history and saved items"""
+    buyer_profile, created = BuyerProfile.objects.get_or_create(user=request.user)
+    
+    from listings.models import Listing
+    # Can add recent listings viewed, purchased items, etc.
+    recent_listings = Listing.objects.filter(status='active').order_by('-created_at')[:8]
+    
+    return render(request, 'accounts/buyer_dashboard.html', {
+        'buyer_profile': buyer_profile,
+        'recent_listings': recent_listings
+    })
 
 @login_required
 @transaction.atomic
