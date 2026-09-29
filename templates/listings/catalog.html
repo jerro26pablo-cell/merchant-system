@@ -116,9 +116,9 @@
                                             <p class="listing-meta">
                                                 <i class="bi bi-clock"></i> 
                                                 {% if listing.time_remaining.days > 0 %}
-                                                    {{ listing.time_remaining.days }}d {{ listing.time_remaining.seconds // 3600 }}h
+                                                    {{ listing.time_remaining.days }}d {{ listing.time_remaining.seconds|add:0|divisibleby:3600|yesno:"" }}h
                                                 {% else %}
-                                                    {{ listing.time_remaining.seconds // 3600 }}h {{ (listing.time_remaining.seconds % 3600) // 60 }}m
+                                                    {% widthratio listing.time_remaining.seconds 3600 1 %}h {% widthratio listing.time_remaining.seconds 60 1|add:0|divisibleby:60 1 %}m
                                                 {% endif %}
                                             </p>
                                         {% endif %}
