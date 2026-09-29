@@ -497,6 +497,22 @@
                     
                     {% if user.is_seller %}
                         <div class="sidebar-section">
+                            <div class="sidebar-section-title">My Store</div>
+                            <ul class="sidebar-nav">
+                                <li class="sidebar-nav-item">
+                                    <a href="{% url 'seller_dashboard' %}" class="sidebar-nav-link">
+                                        <i class="bi bi-shop"></i> My Store
+                                    </a>
+                                </li>
+                                <li class="sidebar-nav-item">
+                                    <a href="{% url 'create_listing' %}" class="sidebar-nav-link">
+                                        <i class="bi bi-plus-circle"></i> Add Item
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="sidebar-section">
                             <div class="sidebar-section-title">Seller Tools</div>
                             <ul class="sidebar-nav">
                                 <li class="sidebar-nav-item">
