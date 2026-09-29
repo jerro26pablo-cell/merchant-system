@@ -85,6 +85,6 @@ ListingImageFormSet = forms.inlineformset_factory(
     Listing,
     ListingImage,
     form=ListingImageForm,
-    extra=3,
+    extra=1,
     can_delete=True
 )

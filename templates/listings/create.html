@@ -1,154 +1,392 @@
 {% extends 'base.html' %}
 {% load listing_filters %}
 
-{% block title %}Create Listing - Welcome Online Merchant{% endblock %}
+{% block title %}Create New Listing - Welcome Online Merchant{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-listing-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+    }
+    
+    .create-listing-container h1 {
+        color: white;
+        margin-bottom: 0.5rem;
+    }
+    
+    .create-listing-container p {
+        color: rgba(255,255,255,0.9);
+        margin-bottom: 0;
+    }
+    
+    .form-section {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border-left: 4px solid #667eea;
+    }
+    
+    .form-section h3 {
+        color: #667eea;
+        margin-bottom: 1.5rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-section h3 i {
+        font-size: 1.5rem;
+    }
+    
+    .image-upload-area {
+        border: 2px dashed #667eea;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+        transition: all 0.3s ease;
+    }
+    
+    .image-upload-area:hover {
+        border-color: #764ba2;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    }
+    
+    .image-form {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border: 1px solid #e2e8f0;
+    }
+    
+    .image-form .image-label {
+        color: #667eea;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
+    .image-form input[type="file"] {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: #f8fafc;
+    }
+    
+    .image-form input[type="file"]:focus {
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .add-image-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .add-image-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .tip-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        border-radius: 16px;
+        padding: 1.5rem;
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .tip-card h5 {
+        color: white;
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+    
+    .tip-card ul li {
+        margin-bottom: 0.75rem;
+        color: rgba(255,255,255,0.95);
+    }
+    
+    .tip-card ul li i {
+        color: white;
+        margin-right: 0.5rem;
+    }
+    
+    .listing-type-card {
+        background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+        border-radius: 16px;
+        padding: 1.5rem;
+        color: white;
+    }
+    
+    .listing-type-card h5 {
+        color: white;
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+    
+    .listing-type-card p {
+        color: rgba(255,255,255,0.95);
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.875rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-label {
+        color: #475569;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 0.875rem 2rem;
+        border-radius: 10px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-outline-success {
+        border: 2px solid #4ade80;
+        color: #4ade80;
+        padding: 0.875rem 2rem;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+    
+    .btn-outline-success:hover {
+        background: #4ade80;
+        color: white;
+    }
+    
+    .info-alert {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border: 2px solid #667eea;
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+    
+    .info-alert h5 {
+        color: #667eea;
+        font-weight: 700;
+    }
+    
+    .delete-image-btn {
+        background: #fee2e2;
+        color: #dc2626;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .delete-image-btn:hover {
+        background: #dc2626;
+        color: white;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h1 class="display-4">Create New Listing</h1>
-        <p class="lead">Add a new product to your inventory</p>
-    </div>
+<div class="create-listing-container">
+    <h1 class="display-4">✨ Create New Listing</h1>
+    <p class="lead">Add a new product to your inventory</p>
 </div>
 
 <div class="row">
     <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="card-title mb-4">Product Information</h2>
-                <form method="POST" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="id_title" class="form-label">Product Title</label>
-                            {{ form.title }}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="id_category" class="form-label">Category</label>
-                            {{ form.category }}
-                        </div>
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="form-section">
+                <h3><i class="bi bi-info-circle"></i> Basic Information</h3>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="id_title" class="form-label">📝 Product Title</label>
+                        {{ form.title }}
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="id_description" class="form-label">Description</label>
-                        {{ form.description }}
+                    <div class="col-md-6 mb-3">
+                        <label for="id_category" class="form-label">🏷️ Category</label>
+                        {{ form.category }}
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="id_listing_type" class="form-label">Listing Type</label>
-                            {{ form.listing_type }}
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="id_condition" class="form-label">Condition</label>
-                            {{ form.condition }}
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="id_quantity" class="form-label">Quantity</label>
-                            {{ form.quantity }}
-                        </div>
-                    </div>
-                    
-                    <div class="row" id="price-fields">
-                        <div class="col-md-6 mb-3" id="buy-now-price-field">
-                            <label for="id_buy_now_price" class="form-label">Buy Now Price ($)</label>
-                            {{ form.buy_now_price }}
-                        </div>
-                        <div class="col-md-6 mb-3" id="starting-bid-field">
-                            <label for="id_starting_bid" class="form-label">Starting Bid ($)</label>
-                            {{ form.starting_bid }}
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="id_size" class="form-label">Size</label>
-                        {{ form.size }}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="id_shipping_address" class="form-label">Shipping Address</label>
-                        <div class="mb-2">
-                            {% if user.buyer_profile and user.buyer_profile.shipping_address %}
-                                <button type="button" class="btn btn-sm btn-outline-secondary" id="use-saved-address" data-saved-address="{{ user.buyer_profile.shipping_address|escapejs }}">
-                                    <i class="bi bi-bookmark"></i> Use Saved Address
-                                </button>
-                            {% endif %}
-                        </div>
-                        {{ form.shipping_address }}
-                        <small class="text-muted">Optional - leave blank to use your default address</small>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Images</label>
-                        {{ image_formset.management_form }}
-                        <div id="image-formset">
-                            {% for form in image_formset %}
-                                <div class="image-form mb-3 p-3 border rounded" data-index="{{ forloop.counter0 }}">
-                                    <div class="mb-2">
-                                        <strong class="image-label">{% if forloop.first %}Main Photo (Thumbnail){% else %}{{ forloop.counter0|add:1|ordinal }} Photo{% endif %}</strong>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label for="{{ form.image.id_for_label }}" class="form-label">Image</label>
-                                        {{ form.image }}
-                                    </div>
-                                    <div class="mb-2">
-                                        <label for="{{ form.alt_text.id_for_label }}" class="form-label">Alt Text</label>
-                                        {{ form.alt_text }}
-                                    </div>
-                                    <div class="mb-2">
-                                        <label for="{{ form.is_primary.id_for_label }}" class="form-label">
-                                            {{ form.is_primary }} Set as Main Photo
-                                        </label>
-                                    </div>
-                                    {{ form.sort_order }}
-                                </div>
-                            {% endfor %}
-                        </div>
-                        <button type="button" class="btn btn-sm btn-outline-primary" id="add-image">Add Another Image</button>
-                    </div>
-                    
-                    <div class="alert alert-info mb-3">
-                        <h5><i class="bi bi-info-circle"></i> Draft vs Official</h5>
-                        <p><strong>Draft:</strong> The listing will be saved but not visible in the store. You can edit it later and make it official when ready.</p>
-                        <p><strong>Official:</strong> The listing will be immediately visible to all buyers in the catalog.</p>
-                    </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" name="save_as_draft" value="true" class="btn btn-outline-success">
-                            <i class="bi bi-file-earmark"></i> Save as Draft
-                        </button>
-                        <button type="submit" name="save_as_draft" value="false" class="btn btn-primary">
-                            <i class="bi bi-check-circle"></i> Make Official
-                        </button>
-                        <a href="{% url 'inventory_management' %}" class="btn btn-secondary">Cancel</a>
-                    </div>
-                </form>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="id_description" class="form-label">📄 Description</label>
+                    {{ form.description }}
+                </div>
             </div>
-        </div>
+            
+            <!-- Listing Details -->
+            <div class="form-section">
+                <h3><i class="bi bi-sliders"></i> Listing Details</h3>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="id_listing_type" class="form-label">🔖 Listing Type</label>
+                        {{ form.listing_type }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="id_condition" class="form-label">✨ Condition</label>
+                        {{ form.condition }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="id_quantity" class="form-label">📦 Quantity</label>
+                        {{ form.quantity }}
+                    </div>
+                </div>
+                
+                <div class="row" id="price-fields">
+                    <div class="col-md-6 mb-3" id="buy-now-price-field">
+                        <label for="id_buy_now_price" class="form-label">💰 Buy Now Price ($)</label>
+                        {{ form.buy_now_price }}
+                    </div>
+                    <div class="col-md-6 mb-3" id="starting-bid-field">
+                        <label for="id_starting_bid" class="form-label">🔨 Starting Bid ($)</label>
+                        {{ form.starting_bid }}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="id_size" class="form-label">📏 Size</label>
+                    {{ form.size }}
+                </div>
+            </div>
+            
+            <!-- Images -->
+            <div class="form-section">
+                <h3><i class="bi bi-images"></i> Product Images</h3>
+                
+                <div class="image-upload-area mb-3">
+                    <i class="bi bi-cloud-upload" style="font-size: 3rem; color: #667eea;"></i>
+                    <p class="mb-2 text-muted">Upload high-quality images to showcase your product</p>
+                    <small class="text-muted">Recommended: Square images, 1000x1000px, under 5MB</small>
+                </div>
+                
+                {{ image_formset.management_form }}
+                <div id="image-formset">
+                    {% for form in image_formset %}
+                        <div class="image-form" data-index="{{ forloop.counter0 }}">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <strong class="image-label">{% if forloop.first %}📸 Main Photo (Thumbnail){% else %}📷 {{ forloop.counter0|add:1|ordinal }} Photo{% endif %}</strong>
+                                {% if not forloop.first %}
+                                    <button type="button" class="delete-image-btn" onclick="this.closest('.image-form').remove();">
+                                        <i class="bi bi-trash"></i> Remove
+                                    </button>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.image.id_for_label }}" class="form-label">Choose Image</label>
+                                {{ form.image }}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.alt_text.id_for_label }}" class="form-label">Alt Text (Optional)</label>
+                                {{ form.alt_text }}
+                                <small class="text-muted">Describe the image for accessibility</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.is_primary.id_for_label }}" class="form-label">
+                                    {{ form.is_primary }} Set as Main Photo
+                                </label>
+                            </div>
+                            {{ form.sort_order }}
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="button" class="add-image-btn" id="add-image">
+                    <i class="bi bi-plus-circle"></i> Add Another Image
+                </button>
+            </div>
+            
+            <!-- Shipping -->
+            <div class="form-section">
+                <h3><i class="bi bi-truck"></i> Shipping Information</h3>
+                
+                <div class="mb-3">
+                    <label for="id_shipping_address" class="form-label">🚚 Shipping Address</label>
+                    <div class="mb-2">
+                        {% if user.buyer_profile and user.buyer_profile.shipping_address %}
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="use-saved-address" data-saved-address="{{ user.buyer_profile.shipping_address|escapejs }}">
+                                <i class="bi bi-bookmark"></i> Use Saved Address
+                            </button>
+                        {% endif %}
+                    </div>
+                    {{ form.shipping_address }}
+                    <small class="text-muted">Optional - leave blank to use your default address</small>
+                </div>
+            </div>
+            
+            <!-- Save Options -->
+            <div class="info-alert mb-3">
+                <h5><i class="bi bi-info-circle"></i> Draft vs Official</h5>
+                <p><strong>📝 Draft:</strong> The listing will be saved but not visible in the store. You can edit it later and make it official when ready.</p>
+                <p><strong>🚀 Official:</strong> The listing will be immediately visible to all buyers in the catalog.</p>
+            </div>
+            
+            <div class="d-flex gap-2 mb-4">
+                <button type="submit" name="save_as_draft" value="true" class="btn btn-outline-success">
+                    <i class="bi bi-file-earmark"></i> Save as Draft
+                </button>
+                <button type="submit" name="save_as_draft" value="false" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Make Official
+                </button>
+                <a href="{% url 'inventory_management' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
     </div>
     
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Tips for Better Listings</h5>
-                <ul class="list-unstyled">
-                    <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Use clear, descriptive titles</li>
-                    <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Include detailed descriptions</li>
-                    <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Upload high-quality images</li>
-                    <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Set competitive prices</li>
-                    <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Choose the right category</li>
-                </ul>
-            </div>
+        <div class="tip-card">
+            <h5><i class="bi bi-lightbulb"></i> Tips for Better Listings</h5>
+            <ul class="list-unstyled">
+                <li><i class="bi bi-check-circle"></i> Use clear, descriptive titles</li>
+                <li><i class="bi bi-check-circle"></i> Include detailed descriptions</li>
+                <li><i class="bi bi-check-circle"></i> Upload high-quality images</li>
+                <li><i class="bi bi-check-circle"></i> Set competitive prices</li>
+                <li><i class="bi bi-check-circle"></i> Choose the right category</li>
+            </ul>
         </div>
         
-        <div class="card mt-3">
-            <div class="card-body">
-                <h5 class="card-title">Listing Types</h5>
-                <p><strong>Buy Now:</strong> Fixed price, immediate purchase</p>
-                <p><strong>Auction:</strong> Bidding system, highest bid wins</p>
-                <p><strong>Both:</strong> Available for both purchase options</p>
-            </div>
+        <div class="listing-type-card">
+            <h5><i class="bi bi-tags"></i> Listing Types</h5>
+            <p><strong>💰 Buy Now:</strong> Fixed price, immediate purchase</p>
+            <p><strong>🔨 Auction:</strong> Bidding system, highest bid wins</p>
+            <p><strong>⚡ Both:</strong> Available for both purchase options</p>
         </div>
     </div>
 </div>
@@ -164,21 +402,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const listingType = listingTypeSelect.value;
         
         if (listingType === 'buy_now') {
-            // Show buy now price, hide starting bid
             buyNowPriceField.style.display = 'block';
             startingBidField.style.display = 'none';
         } else if (listingType === 'auction') {
-            // Show starting bid, hide buy now price
             buyNowPriceField.style.display = 'none';
             startingBidField.style.display = 'block';
         } else {
-            // Both: show both fields
             buyNowPriceField.style.display = 'block';
             startingBidField.style.display = 'block';
         }
     }
     
-    // Initialize on page load
     if (listingTypeSelect) {
         togglePriceFields();
         listingTypeSelect.addEventListener('change', togglePriceFields);
@@ -224,7 +458,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const labelElement = newForm.querySelector('.image-label');
         if (labelElement) {
             const ordinal = getOrdinal(formCount + 1);
-            labelElement.textContent = `${ordinal} Photo`;
+            labelElement.textContent = `📷 ${ordinal} Photo`;
+        }
+        
+        // Add remove button for additional images
+        const headerDiv = newForm.querySelector('.d-flex');
+        if (headerDiv && !headerDiv.querySelector('.delete-image-btn')) {
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'delete-image-btn';
+            removeBtn.innerHTML = '<i class="bi bi-trash"></i> Remove';
+            removeBtn.onclick = function() {
+                newForm.remove();
+            };
+            headerDiv.appendChild(removeBtn);
         }
         
         // Update data-index attribute
