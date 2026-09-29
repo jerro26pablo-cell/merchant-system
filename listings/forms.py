@@ -59,15 +59,33 @@ class ListingForm(forms.ModelForm):
             raise ValidationError('Buy now price must be higher than starting bid.')
         
         # Validate quantity logic
+        # Ensure quantity has a value
+        if quantity is None:
+            quantity = 1
+            cleaned_data['quantity'] = quantity
+        
+        # Ensure available_stock has a default value before any comparison
+        if available_stock is None:
+            available_stock = quantity
+            cleaned_data['available_stock'] = available_stock
+        
         if listing_type == 'buy_now':
             if available_stock > quantity:
                 raise ValidationError('Available stock cannot exceed total quantity.')
             cleaned_data['auction_quantity'] = 0
         elif listing_type == 'auction':
+            # If auction_quantity is not provided, default to quantity
+            if auction_quantity is None:
+                auction_quantity = quantity
+                cleaned_data['auction_quantity'] = auction_quantity
             if auction_quantity > quantity:
                 raise ValidationError('Auction quantity cannot exceed total quantity.')
             cleaned_data['available_stock'] = 0
         elif listing_type == 'both':
+            # If values are not provided, default them appropriately
+            if auction_quantity is None:
+                auction_quantity = 0
+                cleaned_data['auction_quantity'] = auction_quantity
             if available_stock + auction_quantity > quantity:
                 raise ValidationError('Sum of available stock and auction quantity cannot exceed total quantity.')
         

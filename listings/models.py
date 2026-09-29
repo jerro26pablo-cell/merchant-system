@@ -43,7 +43,7 @@ class Listing(models.Model):
     
     # Quantity management - CRITICAL FIELDS
     quantity = models.IntegerField(default=1, help_text=_('Total original quantity'))
-    available_stock = models.IntegerField(default=0, help_text=_('Available for buy-now purchases'))
+    available_stock = models.IntegerField(default=1, help_text=_('Available for buy-now purchases'))
     auction_quantity = models.IntegerField(default=0, help_text=_('Quantity allocated to auction'))
     quantity_sold = models.IntegerField(default=0, help_text=_('Total quantity sold'))
     
