@@ -188,7 +188,7 @@
                 
                 <div class="dropdown-container mb-3">
                     <label class="form-label">Municipality/City</label>
-                    <select class="form-select" name="municipality" id="municipality" required disabled>
+                    <select class="form-select" name="municipality" id="municipality" required>
                         <option value="">Select Municipality/City</option>
                     </select>
                     {% if form.municipality.errors %}
@@ -284,9 +284,8 @@ document.addEventListener('DOMContentLoaded', function() {
     provinceSelect.addEventListener('change', function() {
         const selectedProvince = this.value;
         
-        // Clear and disable municipality dropdown
+        // Clear municipality dropdown
         municipalitySelect.innerHTML = '<option value="">Select Municipality/City</option>';
-        municipalitySelect.disabled = true;
         
         if (selectedProvince) {
             // Show loading
@@ -302,8 +301,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     municipalitySelect.appendChild(option);
                 });
                 
-                // Enable municipality dropdown
-                municipalitySelect.disabled = false;
                 municipalityLoading.classList.remove('show');
             }, 300);
         }
