@@ -1,8 +1,10 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Case, When, F, DecimalField
 from django.core.paginator import Paginator
+from django.db.models.functions import Coalesce
+from decimal import Decimal, InvalidOperation
 from .models import Listing, ListingImage, ListingAttribute, InventoryLog
 from .forms import ListingForm, ListingImageFormSet
 import logging
@@ -44,18 +46,33 @@ def listing_catalog(request):
     if condition:
         listings = listings.filter(condition=condition)
     
-    # Price range filter
+    # Price range filter - annotate with calculated price
+    # For auctions: use current_bid if available, otherwise starting_bid
+    # For buy-now: use buy_now_price
+    listings = listings.annotate(
+        calculated_price=Case(
+            When(
+                listing_type__in=['auction', 'both'],
+                then=Coalesce(F('current_bid'), F('starting_bid'))
+            ),
+            default=F('buy_now_price'),
+            output_field=DecimalField()
+        )
+    )
+    
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
     if min_price:
         try:
-            listings = listings.filter(current_price__gte=float(min_price))
-        except (ValueError, TypeError):
+            min_price_decimal = Decimal(min_price)
+            listings = listings.filter(calculated_price__gte=min_price_decimal)
+        except (ValueError, InvalidOperation, TypeError):
             logger.warning(f"Invalid min_price value: {min_price}")
     if max_price:
         try:
-            listings = listings.filter(current_price__lte=float(max_price))
-        except (ValueError, TypeError):
+            max_price_decimal = Decimal(max_price)
+            listings = listings.filter(calculated_price__lte=max_price_decimal)
+        except (ValueError, InvalidOperation, TypeError):
             logger.warning(f"Invalid max_price value: {max_price}")
     
     # Pagination
