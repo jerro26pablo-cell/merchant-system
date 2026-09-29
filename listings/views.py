@@ -117,29 +117,32 @@ def listing_detail(request, slug):
     try:
         # Allow viewing any listing that the user owns or is active
         listing = get_object_or_404(Listing, slug=slug)
-        
+
         # If not the seller, only show active listings
-        if request.user != listing.seller and listing.status != 'active':
+        if request.user.is_authenticated and request.user != listing.seller and listing.status != 'active':
             messages.error(request, 'This listing is not currently available.')
             return redirect('catalog')
-        
+
         # Track view
-        listing.add_view(
-            user=request.user if request.user.is_authenticated else None,
-            ip_address=request.META.get('REMOTE_ADDR')
-        )
-        
+        try:
+            listing.add_view(
+                user=request.user if request.user.is_authenticated else None,
+                ip_address=request.META.get('REMOTE_ADDR')
+            )
+        except Exception as view_error:
+            logger.warning(f"Could not track view: {view_error}")
+
         # Get similar listings
         similar_listings = Listing.objects.filter(
             category=listing.category,
             status='active'
         ).exclude(id=listing.id)[:4]
-        
+
         context = {
             'listing': listing,
             'similar_listings': similar_listings,
         }
-        
+
         return render(request, 'listings/detail.html', context)
     except Exception as e:
         logger.error(f"Error in listing detail: {e}", exc_info=True)
