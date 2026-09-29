@@ -8,4 +8,7 @@ urlpatterns = [
     path('<slug:slug>/edit/', views.edit_listing, name='edit_listing'),
     path('<slug:slug>/delete/', views.delete_listing, name='delete_listing'),
     path('<slug:slug>/convert-to-auction/', views.convert_to_auction, name='convert_to_auction'),
+    path('inventory/', views.inventory_management, name='inventory_management'),
+    path('<slug:slug>/adjust-inventory/', views.adjust_inventory, name='adjust_inventory'),
+    path('<slug:slug>/inventory-logs/', views.inventory_logs, name='inventory_logs'),
 ]

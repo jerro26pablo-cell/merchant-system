@@ -356,9 +356,15 @@
                         <a class="nav-link" href="{% url 'category_list' %}">Categories</a>
                     </li>
                     {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'buyer_dashboard' %}">Buyer Dashboard</a>
+                        </li>
                         {% if user.is_seller %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'seller_dashboard' %}">Seller Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'inventory_management' %}">Inventory</a>
                             </li>
                         {% endif %}
                         <li class="nav-item">

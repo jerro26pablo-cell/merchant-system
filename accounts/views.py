@@ -3,7 +3,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from .forms import UserRegistrationForm, UserLoginForm, SellerProfileForm
+from .forms import UserRegistrationForm, UserLoginForm, SellerProfileForm, UserProfileForm, BuyerProfileForm
 from .models import User, SellerProfile, BuyerProfile
 
 def register(request):
@@ -39,7 +39,35 @@ def user_logout(request):
 
 @login_required
 def profile(request):
-    return render(request, 'accounts/profile.html')
+    """User profile page with edit functionality"""
+    user = request.user
+    
+    # Get or create profiles
+    buyer_profile, _ = BuyerProfile.objects.get_or_create(user=user)
+    seller_profile = None
+    if user.seller_enabled:
+        seller_profile, _ = SellerProfile.objects.get_or_create(user=user)
+    
+    if request.method == 'POST':
+        user_form = UserProfileForm(request.POST, instance=user)
+        buyer_form = BuyerProfileForm(request.POST, instance=buyer_profile)
+        
+        if user_form.is_valid() and buyer_form.is_valid():
+            user_form.save()
+            buyer_form.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('profile')
+    else:
+        user_form = UserProfileForm(instance=user)
+        buyer_form = BuyerProfileForm(instance=buyer_profile)
+    
+    context = {
+        'user_form': user_form,
+        'buyer_form': buyer_form,
+        'seller_profile': seller_profile,
+    }
+    
+    return render(request, 'accounts/profile.html', context)
 
 @login_required
 def buyer_dashboard(request):
@@ -89,4 +117,16 @@ def seller_dashboard(request):
     from listings.models import Listing
     listings = Listing.objects.filter(seller=request.user).order_by('-created_at')
     
-    return render(request, 'accounts/seller_dashboard.html', {'listings': listings})
+    # Calculate statistics
+    active_listings = listings.filter(status='active').count()
+    buy_now_listings = listings.filter(listing_type='buy_now').count()
+    auction_listings = listings.filter(listing_type='auction').count()
+    
+    context = {
+        'listings': listings,
+        'active_listings': active_listings,
+        'buy_now_listings': buy_now_listings,
+        'auction_listings': auction_listings,
+    }
+    
+    return render(request, 'accounts/seller_dashboard.html', context)

@@ -1,7 +1,7 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth import authenticate
-from .models import User, SellerProfile
+from .models import User, SellerProfile, BuyerProfile
 
 class UserRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -42,11 +42,34 @@ class UserLoginForm(forms.Form):
     def get_user(self):
         return authenticate(username=self.cleaned_data['email'], password=self.cleaned_data['password'])
 
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'phone', 'province', 'municipality', 'address']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'province': forms.TextInput(attrs={'class': 'form-control'}),
+            'municipality': forms.TextInput(attrs={'class': 'form-control'}),
+            'address': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+        }
+
 class SellerProfileForm(forms.ModelForm):
     class Meta:
         model = SellerProfile
         fields = ['business_name', 'business_address', 'business_description']
         widgets = {
-            'business_address': forms.Textarea(attrs={'rows': 3}),
-            'business_description': forms.Textarea(attrs={'rows': 4}),
+            'business_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'business_address': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'business_description': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
+        }
+
+class BuyerProfileForm(forms.ModelForm):
+    class Meta:
+        model = BuyerProfile
+        fields = ['shipping_address', 'billing_address']
+        widgets = {
+            'shipping_address': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'billing_address': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
         }

@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
-{% block title %}Seller Dashboard - Welcome Online Merchant{% endblock %}
+{% block title %}Buyer Dashboard - Welcome Online Merchant{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
-        <h1 class="display-4">Seller Dashboard</h1>
-        <p class="lead">Manage your listings and inventory</p>
+        <h1 class="display-4">Buyer Dashboard</h1>
+        <p class="lead">Welcome back, {{ request.user.username }}!</p>
     </div>
 </div>
 
@@ -14,32 +14,32 @@
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="card-title">{{ listings.count }}</h3>
-                <p class="card-text">Total Listings</p>
+                <h3 class="card-title">{{ buyer_profile.total_purchases }}</h3>
+                <p class="card-text">Total Purchases</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="card-title">{{ active_listings }}</h3>
-                <p class="card-text">Active Listings</p>
+                <h3 class="card-title">${{ buyer_profile.total_spent }}</h3>
+                <p class="card-text">Total Spent</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="card-title">{{ buy_now_listings }}</h3>
-                <p class="card-text">Buy Now Items</p>
+                <h3 class="card-title">{{ recent_listings.count }}</h3>
+                <p class="card-text">Available Items</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="card-title">{{ auction_listings }}</h3>
-                <p class="card-text">Auction Items</p>
+                <h3 class="card-title">Active</h3>
+                <p class="card-text">Account Status</p>
             </div>
         </div>
     </div>
@@ -47,23 +47,14 @@
 
 <div class="row mb-4">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-            <h3>My Listings</h3>
-            <div class="btn-group" role="group">
-                <a href="{% url 'create_listing' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Create New Listing
-                </a>
-                <a href="{% url 'inventory_management' %}" class="btn btn-outline-success">
-                    <i class="bi bi-box-seam"></i> Inventory Management
-                </a>
-            </div>
-        </div>
+        <h3>Recent Listings</h3>
+        <p class="text-muted">Check out the latest items available for purchase</p>
     </div>
 </div>
 
 <div class="row">
-    {% for listing in listings %}
-        <div class="col-md-6 col-lg-4 mb-4">
+    {% for listing in recent_listings %}
+        <div class="col-md-6 col-lg-3 mb-4">
             <div class="card listing-card h-100">
                 {% if listing.primary_image %}
                     <img src="{{ listing.primary_image.image.url }}" class="listing-image" alt="{{ listing.primary_image.alt_text|default:listing.title }}">
@@ -80,8 +71,6 @@
                         {% else %}
                             <span class="badge badge-both">Both</span>
                         {% endif %}
-                        
-                        <span class="badge bg-secondary">{{ listing.get_status_display }}</span>
                     </div>
                     
                     <h5 class="listing-title">{{ listing.title }}</h5>
@@ -91,29 +80,34 @@
                         {% if listing.is_buy_now %}
                             <p class="mb-1"><strong>Available:</strong> {{ listing.available_stock }}</p>
                         {% endif %}
-                        {% if listing.is_auction %}
-                            <p class="mb-1"><strong>Current Bid:</strong> ${{ listing.current_bid|default:listing.starting_bid }}</p>
-                        {% endif %}
                     </div>
                     
-                    <div class="btn-group w-100" role="group">
-                        <a href="{% url 'listing_detail' listing.slug %}" class="btn btn-outline-primary">View</a>
-                        <a href="{% url 'edit_listing' listing.slug %}" class="btn btn-outline-secondary">Edit</a>
-                        {% if listing.listing_type == 'buy_now' and listing.available_stock > 0 %}
-                            <a href="{% url 'convert_to_auction' listing.slug %}" class="btn btn-outline-warning">Auction</a>
-                        {% endif %}
-                    </div>
+                    <a href="{% url 'listing_detail' listing.slug %}" class="btn btn-primary w-100">View Details</a>
                 </div>
             </div>
         </div>
     {% empty %}
         <div class="col-12">
             <div class="alert alert-info">
-                <h4>No listings yet</h4>
-                <p>Start selling by creating your first listing.</p>
-                <a href="{% url 'create_listing' %}" class="btn btn-primary">Create Listing</a>
+                <h4>No listings available</h4>
+                <p>Check back later for new items.</p>
             </div>
         </div>
     {% endfor %}
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Quick Actions</h5>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'listing_catalog' %}" class="btn btn-outline-primary">Browse Catalog</a>
+                    <a href="{% url 'profile' %}" class="btn btn-outline-secondary">Edit Profile</a>
+                    <a href="{% url 'enable_seller_mode' %}" class="btn btn-outline-success">Become a Seller</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

@@ -268,3 +268,98 @@ def convert_to_auction(request, slug):
         return redirect('listing_detail', slug=auction_listing.slug)
     
     return render(request, 'listings/convert_to_auction.html', {'listing': original_listing})
+
+@login_required
+def inventory_management(request):
+    """Inventory management dashboard for sellers"""
+    if not request.user.is_seller:
+        messages.error(request, 'You need to enable seller mode first.')
+        return redirect('enable_seller_mode')
+    
+    listings = Listing.objects.filter(seller=request.user).order_by('-created_at')
+    
+    # Calculate inventory statistics
+    total_stock = sum(listing.available_stock for listing in listings if listing.is_buy_now)
+    total_sold = sum(listing.quantity_sold for listing in listings)
+    low_stock_items = listings.filter(available_stock__lt=5, listing_type='buy_now', status='active')
+    
+    context = {
+        'listings': listings,
+        'total_stock': total_stock,
+        'total_sold': total_sold,
+        'low_stock_items': low_stock_items,
+    }
+    
+    return render(request, 'listings/inventory_management.html', context)
+
+@login_required
+def adjust_inventory(request, slug):
+    """Adjust inventory levels for a listing"""
+    if not request.user.is_seller:
+        messages.error(request, 'You need to enable seller mode first.')
+        return redirect('enable_seller_mode')
+    
+    listing = get_object_or_404(Listing, slug=slug, seller=request.user)
+    
+    if request.method == 'POST':
+        change_type = request.POST.get('change_type')
+        quantity_change = int(request.POST.get('quantity_change', 0))
+        notes = request.POST.get('notes', '')
+        
+        if quantity_change == 0:
+            messages.error(request, 'Quantity change cannot be zero.')
+            return redirect('inventory_management')
+        
+        quantity_before = listing.available_stock
+        quantity_after = quantity_before
+        
+        if change_type == 'restock':
+            listing.available_stock += quantity_change
+            listing.quantity += quantity_change
+            quantity_after = listing.available_stock
+        elif change_type == 'sale':
+            if quantity_change > listing.available_stock:
+                messages.error(request, 'Not enough stock available.')
+                return redirect('inventory_management')
+            listing.available_stock -= quantity_change
+            listing.quantity_sold += quantity_change
+            quantity_after = listing.available_stock
+        elif change_type == 'adjustment':
+            if quantity_change < 0 and abs(quantity_change) > listing.available_stock:
+                messages.error(request, 'Cannot reduce stock below zero.')
+                return redirect('inventory_management')
+            listing.available_stock += quantity_change
+            listing.quantity += quantity_change
+            quantity_after = listing.available_stock
+        elif change_type == 'return':
+            listing.available_stock += quantity_change
+            listing.quantity_sold -= quantity_change
+            quantity_after = listing.available_stock
+        
+        listing.save()
+        
+        # Log the inventory change
+        InventoryLog.objects.create(
+            listing=listing,
+            change_type=change_type,
+            quantity_before=quantity_before,
+            quantity_after=quantity_after,
+            notes=notes or f'{change_type} of {quantity_change} items'
+        )
+        
+        messages.success(request, f'Inventory adjusted successfully. {quantity_before} → {quantity_after}')
+        return redirect('inventory_management')
+    
+    return render(request, 'listings/adjust_inventory.html', {'listing': listing})
+
+@login_required
+def inventory_logs(request, slug):
+    """View inventory logs for a specific listing"""
+    if not request.user.is_seller:
+        messages.error(request, 'You need to enable seller mode first.')
+        return redirect('enable_seller_mode')
+    
+    listing = get_object_or_404(Listing, slug=slug, seller=request.user)
+    logs = listing.inventory_logs.all().order_by('-created_at')
+    
+    return render(request, 'listings/inventory_logs.html', {'listing': listing, 'logs': logs})

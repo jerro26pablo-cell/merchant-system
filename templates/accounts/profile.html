@@ -3,21 +3,26 @@
 {% block title %}My Profile - Welcome Online Merchant{% endblock %}
 
 {% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">My Profile</h1>
+        <p class="lead">Manage your account information and preferences</p>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-md-8">
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-body">
-                <h2 class="card-title mb-4">My Profile</h2>
+                <h2 class="card-title mb-4">Account Information</h2>
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <p><strong>Username:</strong> {{ user.username }}</p>
                         <p><strong>Email:</strong> {{ user.email }}</p>
-                        <p><strong>First Name:</strong> {{ user.first_name }}</p>
-                        <p><strong>Last Name:</strong> {{ user.last_name }}</p>
+                        <p><strong>Status:</strong> {{ user.get_status_display }}</p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Status:</strong> {{ user.get_status_display }}</p>
                         <p><strong>Seller Mode:</strong> 
                             {% if user.seller_enabled %}
                                 <span class="badge bg-success">Enabled</span>
@@ -32,17 +37,119 @@
                                 <span class="badge bg-warning">No</span>
                             {% endif %}
                         </p>
+                        <p><strong>Member Since:</strong> {{ user.created_at|date:"M d, Y" }}</p>
                     </div>
                 </div>
-                
-                {% if not user.seller_enabled %}
-                    <a href="{% url 'enable_seller_mode' %}" class="btn btn-primary">Enable Seller Mode</a>
-                {% else %}
-                    <a href="{% url 'seller_profile' %}" class="btn btn-primary">Edit Seller Profile</a>
-                    <a href="{% url 'seller_dashboard' %}" class="btn btn-secondary">Seller Dashboard</a>
-                {% endif %}
             </div>
         </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="card-title mb-4">Edit Profile</h2>
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <h5 class="mb-3">Personal Information</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_first_name" class="form-label">First Name</label>
+                                {{ user_form.first_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_last_name" class="form-label">Last Name</label>
+                                {{ user_form.last_name }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_phone" class="form-label">Phone</label>
+                        {{ user_form.phone }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_province" class="form-label">Province</label>
+                        {{ user_form.province }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_municipality" class="form-label">Municipality/City</label>
+                        {{ user_form.municipality }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_address" class="form-label">Address</label>
+                        {{ user_form.address }}
+                    </div>
+                    
+                    <h5 class="mb-3 mt-4">Buyer Information</h5>
+                    <div class="mb-3">
+                        <label for="id_shipping_address" class="form-label">Shipping Address</label>
+                        {{ buyer_form.shipping_address }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_billing_address" class="form-label">Billing Address</label>
+                        {{ buyer_form.billing_address }}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Quick Actions</h5>
+                <div class="d-grid gap-2">
+                    {% if not user.seller_enabled %}
+                        <a href="{% url 'enable_seller_mode' %}" class="btn btn-primary">
+                            <i class="bi bi-shop"></i> Enable Seller Mode
+                        </a>
+                    {% else %}
+                        <a href="{% url 'seller_profile' %}" class="btn btn-primary">
+                            <i class="bi bi-shop"></i> Edit Seller Profile
+                        </a>
+                        <a href="{% url 'seller_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-speedometer2"></i> Seller Dashboard
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'buyer_dashboard' %}" class="btn btn-outline-info">
+                        <i class="bi bi-cart"></i> Buyer Dashboard
+                    </a>
+                    
+                    <a href="{% url 'logout' %}" class="btn btn-outline-danger">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        {% if seller_profile %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Seller Stats</h5>
+                <p><strong>Business:</strong> {{ seller_profile.business_name|default:"Not set" }}</p>
+                <p><strong>Rating:</strong> {{ seller_profile.rating }}/5.00</p>
+                <p><strong>Total Sales:</strong> {{ seller_profile.total_sales }}</p>
+                <p><strong>Total Reviews:</strong> {{ seller_profile.total_reviews }}</p>
+                <p><strong>Verification:</strong> 
+                    <span class="badge 
+                        {% if seller_profile.verification_status == 'verified' %}bg-success
+                        {% elif seller_profile.verification_status == 'pending' %}bg-warning
+                        {% else %}bg-danger{% endif %}">
+                        {{ seller_profile.get_verification_status_display }}
+                    </span>
+                </p>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
