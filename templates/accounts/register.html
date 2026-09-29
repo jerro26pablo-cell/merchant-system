@@ -287,22 +287,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear municipality dropdown
         municipalitySelect.innerHTML = '<option value="">Select Municipality/City</option>';
         
-        if (selectedProvince) {
-            // Show loading
-            municipalityLoading.classList.add('show');
-            
-            // Simulate loading delay for better UX
-            setTimeout(() => {
-                const municipalities = philippineData[selectedProvince];
-                municipalities.sort().forEach(municipality => {
-                    const option = document.createElement('option');
-                    option.value = municipality;
-                    option.textContent = municipality;
-                    municipalitySelect.appendChild(option);
-                });
-                
-                municipalityLoading.classList.remove('show');
-            }, 300);
+        if (selectedProvince && philippineData[selectedProvince]) {
+            const municipalities = philippineData[selectedProvince];
+            municipalities.sort().forEach(municipality => {
+                const option = document.createElement('option');
+                option.value = municipality;
+                option.textContent = municipality;
+                municipalitySelect.appendChild(option);
+            });
         }
     });
 
