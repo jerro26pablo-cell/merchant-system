@@ -82,14 +82,15 @@ class BuyerProfile(models.Model):
     billing_address = models.TextField(blank=True)
     total_purchases = models.IntegerField(default=0)
     total_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    bidder_increment = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text=_('Preferred bid increment for auto-bidding'))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         db_table = 'buyer_profiles'
         verbose_name = _('Buyer Profile')
         verbose_name_plural = _('Buyer Profiles')
-    
+
     def __str__(self):
         return f"{self.user.email} - Buyer Profile"
 

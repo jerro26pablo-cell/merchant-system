@@ -153,17 +153,34 @@ def listing_detail(request, slug):
 
         # Check if wishlisted
         is_wishlisted = False
+        my_increment = None
+        my_cap = None
         if request.user.is_authenticated:
             is_wishlisted = Wishlist.objects.filter(
                 user=request.user,
                 listing=listing
             ).exists()
 
+            # Get user's bidder increment preference
+            from accounts.models import BuyerProfile
+            buyer_profile, _ = BuyerProfile.objects.get_or_create(user=request.user)
+            my_increment = buyer_profile.bidder_increment
+
+            # Get user's max bid cap for this listing
+            from bidding.models import MaxBidCap
+            my_cap = MaxBidCap.objects.filter(
+                listing=listing,
+                bidder=request.user,
+                is_active=True
+            ).first()
+
         context = {
             'listing': listing,
             'similar_listings': similar_listings,
             'category_stats': category_stats,
             'is_wishlisted': is_wishlisted,
+            'my_increment': my_increment,
+            'my_cap': my_cap,
         }
 
         return render(request, 'listings/detail.html', context)

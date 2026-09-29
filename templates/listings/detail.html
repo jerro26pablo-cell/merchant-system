@@ -268,41 +268,65 @@ document.addEventListener('DOMContentLoaded', function() {
                         {% else %}
                             <p class="text-muted">No bids yet.</p>
                         {% endif %}
+                    {% endif %}
+
+                    <!-- Live bid feed (visible to all) -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Live bid feed</h5>
+                            <ol class="bid-timeline" id="bidTimeline">
+                                {% for bid in listing.bids.all|dictsortreversed:"created_at" %}
+                                    <li data-bid-id="{{ bid.id }}">
+                                        <strong>₱{{ bid.amount }}</strong>
+                                        <span>{{ bid.bidder.email|truncatechars:10 }}</span>
+                                        {% if bid.is_auto_bid %}<em>proxy</em>{% endif %}
+                                        <time>{{ bid.created_at|date:"M d, H:i" }}</time>
+                                        <small>{{ bid.status }}</small>
+                                    </li>
+                                {% endfor %}
+                            </ol>
+                            {% if user.is_authenticated %}
+                                <h6 class="section-title mt-3">Your bids</h6>
+                                {% for my_bid in listing.bids.all|dictsortreversed:"created_at" %}
+                                    {% if my_bid.bidder == user %}
+                                        <form class="cancel-bid-form" data-bid-id="{{ my_bid.id }}">
+                                            {% csrf_token %}
+                                            <p>₱{{ my_bid.amount }} · {{ my_bid.status }}</p>
+                                            {% if my_bid.status in 'active' 'winning' 'outbid' %}
+                                                <input type="text" name="reason" placeholder="Cancellation reason" required>
+                                                <button class="btn btn-sm btn-outline-secondary" type="submit">Request cancel</button>
+                                            {% endif %}
+                                        </form>
+                                    {% endif %}
+                                {% empty %}
+                                    <p class="text-muted">You haven't placed any bids yet.</p>
+                                {% endfor %}
+                            {% endif %}
                     {% elif user.is_authenticated and listing.status == 'active' %}
-                        <form method="POST" action="{% url 'place_bid' listing.slug %}">
+                        <form id="bidForm" class="bid-form" action="{% url 'place_bid' listing.slug %}" method="POST">
                             {% csrf_token %}
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="input-group">
-                                        <span class="input-group-text">₱</span>
-                                        <input type="number" class="form-control" name="amount" step="0.01" min="{{ listing.current_bid|add:listing.minimum_increment|default:listing.starting_bid }}" required>
-                                        <button type="submit" class="btn btn-primary">Place Bid</button>
-                                    </div>
+                            <div class="form-group mb-3">
+                                <label for="amount">Your bid</label>
+                                <input type="number" step="{{ listing.minimum_increment }}" min="{{ listing.current_bid|add:listing.minimum_increment|default:listing.starting_bid }}" name="amount" id="amount" required value="{{ listing.current_bid|add:listing.minimum_increment|default:listing.starting_bid }}">
+                                <div id="bidIncrementInfo" class="text-muted" style="font-size: 0.85rem; margin-top: 0.25rem;">
+                                    Increment: ₱{{ listing.minimum_increment }} (from ₱{{ listing.current_bid|default:0 }})
                                 </div>
                             </div>
-                        </form>
-
-                        <hr>
-
-                        <h6>Set Maximum Bid (Auto-Bid)</h6>
-                        <form method="POST" action="{% url 'set_max_bid_cap' listing.slug %}">
-                            {% csrf_token %}
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="input-group mb-2">
-                                        <span class="input-group-text">₱</span>
-                                        <input type="number" class="form-control" name="max_amount" step="0.01" placeholder="Maximum amount" required>
-                                    </div>
+                            <div class="form-group mb-3">
+                                <label>Lock increment (optional)</label>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <input type="number" step="0.01" min="{{ listing.minimum_increment }}" name="bidder_increment" id="bidder_increment" value="{{ my_increment|default:'' }}" placeholder="Your preferred increment">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="confirmIncrementBtn">Confirm</button>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="input-group mb-2">
-                                        <span class="input-group-text">₱</span>
-                                        <input type="number" class="form-control" name="personal_increment" step="0.01" placeholder="Preferred increment (optional)">
-                                    </div>
-                                </div>
+                                <p class="text-muted" style="font-size: 0.8rem; margin-top: 0.25rem;">Set your preferred bid increment for auto-bidding (≥ ₱{{ listing.minimum_increment }})</p>
                             </div>
-                            <button type="submit" class="btn btn-secondary">Set Max Bid Cap</button>
+                            <div class="form-group mb-3">
+                                <label for="max_cap">Max bid cap (hidden proxy)</label>
+                                <input type="number" step="0.01" name="max_cap" id="max_cap" value="{{ my_cap.max_amount|default:'' }}" placeholder="Optional">
+                            </div>
+                            <button class="btn btn-outline-primary w-100" type="submit">Place bid</button>
                         </form>
+                        <p class="text-danger" id="bidError" hidden></p>
                     {% elif not user.is_authenticated %}
                         <p class="text-muted">Please <a href="{% url 'login' %}">login</a> to place bids.</p>
                     {% endif %}
@@ -469,6 +493,21 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 function toggleWishlist(listingId, btn) {
     const isWishlisted = btn.textContent.includes('Wishlisted');
     const url = isWishlisted
@@ -502,5 +541,83 @@ function toggleWishlist(listingId, btn) {
         alert('Error updating wishlist');
     });
 }
+
+// Bid form submission via AJAX
+document.addEventListener('DOMContentLoaded', function() {
+    const bidForm = document.getElementById('bidForm');
+    if (bidForm) {
+        bidForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(bidForm);
+            const url = bidForm.action || window.location.href;
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update current bid display
+                    const currentBidEl = document.getElementById('currentBid');
+                    if (currentBidEl) {
+                        currentBidEl.textContent = '₱' + data.current_bid;
+                    }
+                    // Refresh bid timeline
+                    location.reload();
+                } else {
+                    const errorEl = document.getElementById('bidError');
+                    if (errorEl) {
+                        errorEl.textContent = data.error || 'Error placing bid';
+                        errorEl.hidden = false;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error placing bid');
+            });
+        });
+    }
+
+    // Bid cancellation forms
+    document.querySelectorAll('.cancel-bid-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const bidId = this.dataset.bidId;
+            const reason = this.querySelector('input[name="reason"]').value;
+
+            if (!reason) {
+                alert('Please provide a cancellation reason');
+                return;
+            }
+
+            fetch(`/bidding/cancel/${bidId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `reason=${encodeURIComponent(reason)}`
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Cancellation request submitted');
+                    location.reload();
+                } else {
+                    alert('Error submitting cancellation request');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error submitting cancellation request');
+            });
+        });
+    });
+});
 </script>
 {% endblock %}

@@ -13,33 +13,65 @@ logger = logging.getLogger(__name__)
 def place_bid(request, slug):
     try:
         listing = get_object_or_404(Listing, slug=slug, status='active')
-        
+
         if request.method == 'POST':
             amount = float(request.POST.get('amount'))
-            
+            bidder_increment = request.POST.get('bidder_increment')
+            max_cap = request.POST.get('max_cap')
+
             try:
-                bid = Bid.place_bid(listing, request.user, amount)
-                messages.success(request, f'Bid of ${amount:.2f} placed successfully!')
-                
-                if request.headers.get('Content-Type') == 'application/json':
+                # Save bidder increment preference
+                if bidder_increment:
+                    from accounts.models import BuyerProfile
+                    buyer_profile, _ = BuyerProfile.objects.get_or_create(user=request.user)
+                    buyer_profile.bidder_increment = float(bidder_increment)
+                    buyer_profile.save()
+
+                # Place bid with increment preference
+                bid = Bid.place_bid(listing, request.user, amount, is_auto_bid=False)
+
+                # Save bidder increment to the bid
+                if bidder_increment:
+                    bid.personal_increment = float(bidder_increment)
+                    bid.save()
+
+                # Set max bid cap if provided
+                if max_cap:
+                    max_cap_obj, created = MaxBidCap.objects.update_or_create(
+                        listing=listing,
+                        bidder=request.user,
+                        defaults={
+                            'max_amount': float(max_cap),
+                            'personal_increment': float(bidder_increment) if bidder_increment else None,
+                            'is_active': True
+                        }
+                    )
+
+                # Check if AJAX request
+                is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+                if is_ajax:
                     return JsonResponse({
                         'success': True,
                         'bid_amount': str(bid.amount),
                         'current_bid': str(listing.current_bid),
                         'status': bid.status
                     })
-                
+
+                messages.success(request, f'Bid of ₱{amount:.2f} placed successfully!')
                 return redirect('listing_detail', slug=listing.slug)
-                
+
             except Exception as e:
                 logger.error(f"Error placing bid: {e}", exc_info=True)
-                messages.error(request, str(e))
-                
-                if request.headers.get('Content-Type') == 'application/json':
+
+                is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+                if is_ajax:
                     return JsonResponse({'success': False, 'error': str(e)}, status=400)
-                
+
+                messages.error(request, str(e))
                 return redirect('listing_detail', slug=listing.slug)
-        
+
         return redirect('listing_detail', slug=listing.slug)
     except Exception as e:
         logger.error(f"Error in place_bid view: {e}", exc_info=True)
