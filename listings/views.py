@@ -5,6 +5,9 @@ from django.db.models import Q, Count
 from django.core.paginator import Paginator
 from .models import Listing, ListingImage, ListingAttribute, InventoryLog
 from .forms import ListingForm, ListingImageFormSet
+import logging
+
+logger = logging.getLogger(__name__)
 
 def listing_catalog(request):
     """Catalog-style view of all active listings"""
@@ -12,11 +15,10 @@ def listing_catalog(request):
         listings = Listing.objects.filter(
             status='active'
         ).select_related('seller', 'category').prefetch_related('images').order_by('-created_at')
+        logger.info(f"Fetched {listings.count()} active listings")
     except Exception as e:
         # Handle database errors gracefully
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error fetching listings: {e}")
+        logger.error(f"Error fetching listings: {e}", exc_info=True)
         listings = Listing.objects.none()
     
     # Search functionality
@@ -46,9 +48,15 @@ def listing_catalog(request):
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
     if min_price:
-        listings = listings.filter(current_price__gte=min_price)
+        try:
+            listings = listings.filter(current_price__gte=float(min_price))
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid min_price value: {min_price}")
     if max_price:
-        listings = listings.filter(current_price__lte=max_price)
+        try:
+            listings = listings.filter(current_price__lte=float(max_price))
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid max_price value: {max_price}")
     
     # Pagination
     paginator = Paginator(listings, 12)
