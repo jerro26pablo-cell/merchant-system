@@ -8,15 +8,35 @@
         <div class="card">
             <div class="card-body">
                 <h2 class="card-title text-center mb-4">Login</h2>
+                
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <h5>Please fix the following errors:</h5>
+                        <ul>
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
                 <form method="POST">
                     {% csrf_token %}
                     <div class="mb-3">
                         <label for="id_email" class="form-label">Email</label>
-                        <input type="email" class="form-control" name="email" id="id_email" required>
+                        <input type="email" class="form-control" name="email" id="id_email" required value="{{ form.email.value|default:'' }}">
+                        {% if form.email.errors %}
+                            <div class="text-danger small">{{ form.email.errors.0 }}</div>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
                         <label for="id_password" class="form-label">Password</label>
                         <input type="password" class="form-control" name="password" id="id_password" required>
+                        {% if form.password.errors %}
+                            <div class="text-danger small">{{ form.password.errors.0 }}</div>
+                        {% endif %}
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Login</button>
                 </form>

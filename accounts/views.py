@@ -3,8 +3,11 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
+import logging
 from .forms import UserRegistrationForm, UserLoginForm, SellerProfileForm, UserProfileForm, BuyerProfileForm
 from .models import User, SellerProfile, BuyerProfile
+
+logger = logging.getLogger(__name__)
 
 def register(request):
     if request.method == 'POST':
@@ -15,6 +18,9 @@ def register(request):
             login(request, user)
             messages.success(request, 'Registration successful! You are now a buyer.')
             return redirect('buyer_dashboard')
+        else:
+            # Log form errors for debugging
+            logger.error(f"Registration form errors: {form.errors}")
     else:
         form = UserRegistrationForm()
     return render(request, 'accounts/register.html', {'form': form})
@@ -27,6 +33,9 @@ def user_login(request):
             login(request, user)
             messages.success(request, 'Login successful!')
             return redirect('home')
+        else:
+            # Log form errors for debugging
+            logger.error(f"Login form errors: {form.errors}")
     else:
         form = UserLoginForm()
     return render(request, 'accounts/login.html', {'form': form})
