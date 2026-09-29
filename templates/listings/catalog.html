@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 {% load listing_filters %}
 
-{% block title %}Catalog - Welcome Online Merchant{% endblock %}
+{% block title %}Browse Catalog - Welcome Online Merchant{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
-        <h1 class="display-4">Product Catalog</h1>
+        <h1 class="display-4">Browse Catalog</h1>
         <p class="lead">Browse our amazing collection of products</p>
     </div>
 </div>
@@ -42,6 +42,16 @@
                         <option value="good" {% if condition == 'good' %}selected{% endif %}>Good</option>
                         <option value="fair" {% if condition == 'fair' %}selected{% endif %}>Fair</option>
                         <option value="for_parts" {% if condition == 'for_parts' %}selected{% endif %}>For Parts</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" name="category">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                            <option value="{{ category.slug }}" {% if category_slug == category.slug %}selected{% endif %}>{{ category.name }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 

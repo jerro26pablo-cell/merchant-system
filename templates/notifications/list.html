@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - Welcome Online Merchant{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="display-4">Notifications</h1>
+        <p class="lead">Stay updated with your activities</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        {% if notifications %}
+            <div class="list-group">
+                {% for notification in notifications %}
+                    <div class="list-group-item {% if not notification.is_read %}list-group-item-primary{% endif %}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ notification.title }}</h5>
+                            <small>{{ notification.created_at|date:"M d, Y H:i" }}</small>
+                        </div>
+                        <p class="mb-1">{{ notification.message }}</p>
+                        {% if not notification.is_read %}
+                            <a href="{% url 'mark_notification_read' notification.id %}" class="btn btn-sm btn-outline-primary mt-2">Mark as Read</a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <h4>No notifications</h4>
+                <p>You don't have any notifications at the moment.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

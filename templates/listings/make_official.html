@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Make Listing Official - Welcome Online Merchant{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">Make Listing Official</h1>
+        <p class="lead">Publish your draft listing to the official store</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title mb-4">{{ listing.title }}</h2>
+                <p class="text-muted mb-4">This listing is currently in draft status and not visible in the store.</p>
+                
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-info-circle"></i> What happens when you make it official?</h5>
+                    <ul>
+                        <li>The listing will become visible to all buyers in the catalog</li>
+                        <li>Users can start bidding on or purchasing your item</li>
+                        <li>You can still edit the listing after making it official</li>
+                        <li>You can convert it back to draft at any time</li>
+                    </ul>
+                </div>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Make Official
+                        </button>
+                        <a href="{% url 'inventory_management' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Listing Details</h5>
+                <p><strong>Type:</strong> {{ listing.get_listing_type_display }}</p>
+                <p><strong>Price:</strong> ${{ listing.buy_now_price|default:listing.starting_bid }}</p>
+                <p><strong>Condition:</strong> {{ listing.get_condition_display }}</p>
+                <p><strong>Quantity:</strong> {{ listing.quantity }}</p>
+                <p><strong>Category:</strong> {{ listing.category.name }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

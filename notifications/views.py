@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 @login_required
 def notification_list(request):
     try:
-        notifications = request.user.notifications.all().order_by('-created_at')
+        from .models import Notification
+        notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
         
         context = {
             'notifications': notifications,
@@ -19,7 +20,7 @@ def notification_list(request):
     except Exception as e:
         logger.error(f"Error in notification_list: {e}", exc_info=True)
         messages.error(request, 'An error occurred while loading your notifications.')
-        return render(request, 'notifications/list.html', {'notifications': request.user.notifications.none()})
+        return render(request, 'notifications/list.html', {'notifications': []})
 
 @login_required
 def mark_notification_read(request, notification_id):

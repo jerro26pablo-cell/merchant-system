@@ -18,10 +18,15 @@ def listing_catalog(request):
             status='active'
         ).select_related('seller', 'category').prefetch_related('images').order_by('-created_at')
         logger.info(f"Fetched {listings.count()} active listings")
+        
+        # Get categories for filter
+        from categories.models import Category
+        categories = Category.objects.filter(is_active=True).order_by('name')
     except Exception as e:
         # Handle database errors gracefully
         logger.error(f"Error fetching listings: {e}", exc_info=True)
         listings = Listing.objects.none()
+        categories = Category.objects.none()
     
     try:
         # Search functionality
@@ -89,6 +94,7 @@ def listing_catalog(request):
             'condition': condition,
             'min_price': min_price,
             'max_price': max_price,
+            'categories': categories,
         }
         
         return render(request, 'listings/catalog.html', context)
@@ -103,6 +109,7 @@ def listing_catalog(request):
             'condition': '',
             'min_price': '',
             'max_price': '',
+            'categories': Category.objects.none(),
         })
 
 def listing_detail(request, slug):
@@ -141,9 +148,15 @@ def create_listing(request):
         
         if request.method == 'POST':
             form = ListingForm(request.POST, request.FILES)
+            save_as_draft = request.POST.get('save_as_draft') == 'true'
+            
             if form.is_valid():
                 listing = form.save(commit=False)
                 listing.seller = request.user
+                if save_as_draft:
+                    listing.status = 'draft'
+                else:
+                    listing.status = 'active'
                 listing.save()
                 
                 # Handle images
@@ -160,8 +173,12 @@ def create_listing(request):
                     notes='Initial listing creation'
                 )
                 
-                messages.success(request, 'Listing created successfully!')
-                return redirect('listing_detail', slug=listing.slug)
+                if save_as_draft:
+                    messages.success(request, 'Draft listing created successfully!')
+                    return redirect('inventory_management')
+                else:
+                    messages.success(request, 'Listing created successfully!')
+                    return redirect('listing_detail', slug=listing.slug)
         else:
             form = ListingForm()
             image_formset = ListingImageFormSet()
@@ -295,25 +312,34 @@ def convert_to_auction(request, slug):
 @login_required
 def inventory_management(request):
     """Inventory management dashboard for sellers"""
-    if not request.user.is_seller:
-        messages.error(request, 'You need to enable seller mode first.')
-        return redirect('enable_seller_mode')
-    
-    listings = Listing.objects.filter(seller=request.user).order_by('-created_at')
-    
-    # Calculate inventory statistics
-    total_stock = sum(listing.available_stock for listing in listings if listing.is_buy_now)
-    total_sold = sum(listing.quantity_sold for listing in listings)
-    low_stock_items = listings.filter(available_stock__lt=5, listing_type='buy_now', status='active')
-    
-    context = {
-        'listings': listings,
-        'total_stock': total_stock,
-        'total_sold': total_sold,
-        'low_stock_items': low_stock_items,
-    }
-    
-    return render(request, 'listings/inventory_management.html', context)
+    try:
+        if not request.user.is_seller:
+            messages.error(request, 'You need to enable seller mode first.')
+            return redirect('enable_seller_mode')
+        
+        listings = Listing.objects.filter(seller=request.user).order_by('-created_at')
+        draft_listings = listings.filter(status='draft')
+        active_listings = listings.filter(status='active')
+        
+        # Calculate inventory statistics
+        total_stock = sum(listing.available_stock for listing in listings if listing.is_buy_now)
+        total_sold = sum(listing.quantity_sold for listing in listings)
+        low_stock_items = listings.filter(available_stock__lt=5, listing_type='buy_now', status='active')
+        
+        context = {
+            'listings': listings,
+            'draft_listings': draft_listings,
+            'active_listings': active_listings,
+            'total_stock': total_stock,
+            'total_sold': total_sold,
+            'low_stock_items': low_stock_items,
+        }
+        
+        return render(request, 'listings/inventory_management.html', context)
+    except Exception as e:
+        logger.error(f"Error in inventory management: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while loading your inventory.')
+        return redirect('seller_dashboard')
 
 @login_required
 def adjust_inventory(request, slug):
@@ -386,3 +412,25 @@ def inventory_logs(request, slug):
     logs = listing.inventory_logs.all().order_by('-created_at')
     
     return render(request, 'listings/inventory_logs.html', {'listing': listing, 'logs': logs})
+
+@login_required
+def make_listing_official(request, slug):
+    """Make a draft listing official (visible in store)"""
+    try:
+        if not request.user.is_seller:
+            messages.error(request, 'You need to enable seller mode first.')
+            return redirect('enable_seller_mode')
+        
+        listing = get_object_or_404(Listing, slug=slug, seller=request.user, status='draft')
+        
+        if request.method == 'POST':
+            listing.status = 'active'
+            listing.save()
+            messages.success(request, 'Listing is now official and visible in the store!')
+            return redirect('inventory_management')
+        
+        return render(request, 'listings/make_official.html', {'listing': listing})
+    except Exception as e:
+        logger.error(f"Error in make_listing_official: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while making the listing official.')
+        return redirect('inventory_management')

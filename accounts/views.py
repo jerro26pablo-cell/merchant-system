@@ -115,14 +115,19 @@ def buyer_dashboard(request):
 @login_required
 @transaction.atomic
 def enable_seller_mode(request):
-    user = request.user
-    if not user.seller_enabled:
-        user.seller_enabled = True
-        user.save()
-        SellerProfile.objects.get_or_create(user=user)
-        messages.success(request, 'Seller mode enabled! Please complete your seller profile.')
-        return redirect('seller_profile')
-    return redirect('profile')
+    try:
+        user = request.user
+        if not user.seller_enabled:
+            user.seller_enabled = True
+            user.save()
+            SellerProfile.objects.get_or_create(user=user)
+            messages.success(request, 'Seller mode enabled! Please complete your seller profile.')
+            return redirect('seller_profile')
+        return redirect('profile')
+    except Exception as e:
+        logger.error(f"Error enabling seller mode: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while enabling seller mode.')
+        return redirect('profile')
 
 @login_required
 def seller_profile(request):
@@ -132,6 +137,18 @@ def seller_profile(request):
         if request.method == 'POST':
             form = SellerProfileForm(request.POST, instance=profile)
             if form.is_valid():
+                # Handle province and municipality from dropdown and append to address
+                province = request.POST.get('province', '')
+                municipality = request.POST.get('municipality', '')
+                street_address = request.POST.get('business_address', '')
+                
+                # Combine address components
+                if province and municipality:
+                    full_address = f"{street_address}\n{municipality}, {province}"
+                    profile.business_address = full_address
+                else:
+                    profile.business_address = street_address
+                
                 form.save()
                 messages.success(request, 'Seller profile updated successfully!')
                 return redirect('seller_dashboard')

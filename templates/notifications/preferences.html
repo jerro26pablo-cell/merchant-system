@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Notification Preferences - Welcome Online Merchant{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="display-4">Notification Preferences</h1>
+        <p class="lead">Customize how you receive notifications</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="outbid_notifications" id="outbid_notifications" {% if preferences.outbid_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="outbid_notifications">Outbid Notifications</label>
+                        </div>
+                        <small class="text-muted">Get notified when someone outbids you</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="bid_status_notifications" id="bid_status_notifications" {% if preferences.bid_status_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="bid_status_notifications">Bid Status Notifications</label>
+                        </div>
+                        <small class="text-muted">Get notified about bid status changes</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="price_drop_notifications" id="price_drop_notifications" {% if preferences.price_drop_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="price_drop_notifications">Price Drop Notifications</label>
+                        </div>
+                        <small class="text-muted">Get notified when prices drop on items you're watching</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="saved_search_notifications" id="saved_search_notifications" {% if preferences.saved_search_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="saved_search_notifications">Saved Search Notifications</label>
+                        </div>
+                        <small class="text-muted">Get notified when new items match your saved searches</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="order_update_notifications" id="order_update_notifications" {% if preferences.order_update_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="order_update_notifications">Order Update Notifications</label>
+                        </div>
+                        <small class="text-muted">Get notified about order status updates</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="chat_message_notifications" id="chat_message_notifications" {% if preferences.chat_message_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="chat_message_notifications">Chat Message Notifications</label>
+                        </div>
+                        <small class="text-muted">Get notified when you receive chat messages</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="email_notifications" id="email_notifications" {% if preferences.email_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="email_notifications">Email Notifications</label>
+                        </div>
+                        <small class="text-muted">Receive notifications via email</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="push_notifications" id="push_notifications" {% if preferences.push_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="push_notifications">Push Notifications</label>
+                        </div>
+                        <small class="text-muted">Receive push notifications in your browser</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="in_app_notifications" id="in_app_notifications" {% if preferences.in_app_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="in_app_notifications">In-App Notifications</label>
+                        </div>
+                        <small class="text-muted">Show notifications within the app</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Preferences</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

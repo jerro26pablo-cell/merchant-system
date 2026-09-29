@@ -59,6 +59,69 @@
             color: rgba(255,255,255,0.9) !important;
         }
         
+        .sidebar {
+            background: white;
+            box-shadow: var(--shadow-lg);
+            min-height: calc(100vh - 70px);
+            padding: 2rem 0;
+            position: sticky;
+            top: 70px;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .sidebar-nav-item {
+            margin-bottom: 0.5rem;
+        }
+        
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .sidebar-nav-link:hover {
+            background: var(--light-bg);
+            color: var(--primary-color);
+            transform: translateX(5px);
+        }
+        
+        .sidebar-nav-link.active {
+            background: var(--gradient-primary);
+            color: white;
+        }
+        
+        .sidebar-nav-link i {
+            margin-right: 0.75rem;
+            font-size: 1.2rem;
+        }
+        
+        .sidebar-section {
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .sidebar-section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .main-content {
+            padding: 2rem;
+        }
+        
         .nav-link {
             color: rgba(255,255,255,0.9) !important;
             font-weight: 500;
@@ -335,12 +398,20 @@
             color: var(--text-secondary);
             font-size: 0.875rem;
         }
+        
+        /* Responsive sidebar */
+        @media (max-width: 991px) {
+            .sidebar {
+                position: static;
+                min-height: auto;
+            }
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
+        <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'home' %}">
                 <i class="bi bi-shop"></i> Welcome Online Merchant
             </a>
@@ -348,38 +419,11 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'catalog' %}">Catalog</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'category_list' %}">Categories</a>
-                    </li>
-                    {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'buyer_dashboard' %}">Buyer Dashboard</a>
-                        </li>
-                        {% if user.is_seller %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'seller_dashboard' %}">Seller Dashboard</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'inventory_management' %}">Inventory</a>
-                            </li>
-                        {% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'my_bids' %}">My Bids</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'notification_list' %}">Notifications</a>
-                        </li>
-                    {% endif %}
-                </ul>
-                <form class="d-flex search-bar" method="GET" action="{% url 'catalog' %}">
+                <form class="d-flex search-bar ms-auto me-3" method="GET" action="{% url 'catalog' %}">
                     <input class="form-control me-2" type="search" name="search" placeholder="Search listings..." value="{{ search_query }}">
                     <button class="btn btn-outline-light" type="submit">Search</button>
                 </form>
-                <ul class="navbar-nav ms-3">
+                <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
@@ -409,18 +453,78 @@
         </div>
     </nav>
 
-    <main class="container py-4">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Left Sidebar -->
+            <div class="col-lg-2 col-md-3 sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Shopping</div>
+                    <ul class="sidebar-nav">
+                        <li class="sidebar-nav-item">
+                            <a href="{% url 'catalog' %}" class="sidebar-nav-link">
+                                <i class="bi bi-grid"></i> Browse Catalog
+                            </a>
+                        </li>
+                    </ul>
                 </div>
-            {% endfor %}
-        {% endif %}
-        
-        {% block content %}{% endblock %}
-    </main>
+                
+                {% if user.is_authenticated %}
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">My Account</div>
+                        <ul class="sidebar-nav">
+                            <li class="sidebar-nav-item">
+                                <a href="{% url 'buyer_dashboard' %}" class="sidebar-nav-link">
+                                    <i class="bi bi-person"></i> Buyer Dashboard
+                                </a>
+                            </li>
+                            <li class="sidebar-nav-item">
+                                <a href="{% url 'my_bids' %}" class="sidebar-nav-link">
+                                    <i class="bi bi-gavel"></i> My Bids
+                                </a>
+                            </li>
+                            <li class="sidebar-nav-item">
+                                <a href="{% url 'notification_list' %}" class="sidebar-nav-link">
+                                    <i class="bi bi-bell"></i> Notifications
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    {% if user.is_seller %}
+                        <div class="sidebar-section">
+                            <div class="sidebar-section-title">Seller Tools</div>
+                            <ul class="sidebar-nav">
+                                <li class="sidebar-nav-item">
+                                    <a href="{% url 'seller_dashboard' %}" class="sidebar-nav-link">
+                                        <i class="bi bi-shop-window"></i> Seller Dashboard
+                                    </a>
+                                </li>
+                                <li class="sidebar-nav-item">
+                                    <a href="{% url 'inventory_management' %}" class="sidebar-nav-link">
+                                        <i class="bi bi-box-seam"></i> Inventory
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-lg-10 col-md-9 main-content">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
 
     <footer class="footer">
         <div class="container">
@@ -432,8 +536,7 @@
                 <div class="col-md-4">
                     <h5>Quick Links</h5>
                     <ul class="list-unstyled">
-                        <li><a href="{% url 'catalog' %}" class="text-white">Catalog</a></li>
-                        <li><a href="{% url 'category_list' %}" class="text-white">Categories</a></li>
+                        <li><a href="{% url 'catalog' %}" class="text-white">Browse Catalog</a></li>
                         {% if user.is_authenticated %}
                             <li><a href="{% url 'profile' %}" class="text-white">My Profile</a></li>
                         {% endif %}

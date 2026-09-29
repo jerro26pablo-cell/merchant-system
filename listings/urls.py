@@ -11,4 +11,5 @@ urlpatterns = [
     path('inventory/', views.inventory_management, name='inventory_management'),
     path('<slug:slug>/adjust-inventory/', views.adjust_inventory, name='adjust_inventory'),
     path('<slug:slug>/inventory-logs/', views.inventory_logs, name='inventory_logs'),
+    path('<slug:slug>/make-official/', views.make_listing_official, name='make_listing_official'),
 ]

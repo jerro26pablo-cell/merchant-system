@@ -65,12 +65,62 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center">
             <h3>Inventory Items</h3>
-            <a href="{% url 'create_listing' %}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Add New Product
-            </a>
+            <div class="btn-group">
+                <a href="{% url 'create_listing' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Add New Product
+                </a>
+                <a href="{% url 'create_listing' %}?draft=true" class="btn btn-outline-success">
+                    <i class="bi bi-file-earmark"></i> Create Draft
+                </a>
+            </div>
         </div>
     </div>
 </div>
+
+{% if draft_listings %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-file-earmark"></i> Draft Listings ({{ draft_listings.count }})</h5>
+                <p class="text-muted">These listings are not visible in the store yet.</p>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Type</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for listing in draft_listings %}
+                            <tr>
+                                <td>
+                                    <strong>{{ listing.title }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ listing.category.name }}</small>
+                                </td>
+                                <td>{{ listing.get_listing_type_display }}</td>
+                                <td>{{ listing.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'edit_listing' listing.slug %}" class="btn btn-outline-primary">Edit</a>
+                                        <a href="{% url 'make_listing_official' listing.slug %}" class="btn btn-success">Make Official</a>
+                                        <a href="{% url 'delete_listing' listing.slug %}" class="btn btn-outline-danger">Delete</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <div class="table-responsive">
     <table class="table table-striped">
@@ -86,7 +136,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for listing in listings %}
+            {% for listing in active_listings %}
                 <tr>
                     <td>
                         <div class="d-flex align-items-center">
