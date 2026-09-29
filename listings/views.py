@@ -482,6 +482,120 @@ def make_draft(request, slug):
         messages.error(request, 'An error occurred while making the listing a draft.')
         return redirect('seller_dashboard')
 
+@login_required
+def bulk_inventory_operation(request):
+    """Perform bulk inventory operations on multiple listings"""
+    try:
+        if not request.user.is_seller:
+            messages.error(request, 'You need to enable seller mode first.')
+            return redirect('enable_seller_mode')
+        
+        if request.method == 'POST':
+            operation_type = request.POST.get('operation_type')
+            quantity = int(request.POST.get('quantity', 0))
+            listing_ids = request.POST.getlist('listings')
+            
+            if not operation_type or quantity <= 0 or not listing_ids:
+                messages.error(request, 'Invalid operation parameters.')
+                return redirect('seller_dashboard')
+            
+            listings = Listing.objects.filter(id__in=listing_ids, seller=request.user)
+            updated_count = 0
+            
+            for listing in listings:
+                quantity_before = listing.available_stock
+                
+                if operation_type == 'add':
+                    listing.available_stock += quantity
+                    listing.quantity += quantity
+                    change_type = 'restock'
+                elif operation_type == 'remove':
+                    if listing.available_stock < quantity:
+                        messages.warning(request, f'Cannot remove {quantity} from {listing.title}. Only {listing.available_stock} available.')
+                        continue
+                    listing.available_stock -= quantity
+                    listing.quantity -= quantity
+                    change_type = 'sale'
+                elif operation_type == 'putqty':
+                    listing.available_stock = quantity
+                    listing.quantity = quantity
+                    change_type = 'adjustment'
+                
+                listing.save()
+                
+                # Log the inventory change
+                InventoryLog.objects.create(
+                    listing=listing,
+                    change_type=change_type,
+                    quantity_before=quantity_before,
+                    quantity_after=listing.available_stock,
+                    notes=f'Bulk {operation_type} operation: {quantity} items'
+                )
+                
+                updated_count += 1
+            
+            messages.success(request, f'Successfully updated {updated_count} listings.')
+            return redirect('seller_dashboard')
+        
+        return redirect('seller_dashboard')
+    except Exception as e:
+        logger.error(f"Error in bulk inventory operation: {e}", exc_info=True)
+        messages.error(request, 'An error occurred during bulk operation.')
+        return redirect('seller_dashboard')
+
+@login_required
+def adjust_quantity(request):
+    """Handle individual quantity adjustments via AJAX"""
+    try:
+        if not request.user.is_seller:
+            return JsonResponse({'success': False, 'message': 'You need to enable seller mode first.'}, status=403)
+        
+        if request.method != 'POST':
+            return JsonResponse({'success': False, 'message': 'Invalid request method.'}, status=405)
+        
+        listing_id = request.POST.get('listing_id')
+        change = int(request.POST.get('change', 0))
+        
+        if not listing_id or change == 0:
+            return JsonResponse({'success': False, 'message': 'Invalid parameters.'}, status=400)
+        
+        listing = get_object_or_404(Listing, id=listing_id, seller=request.user)
+        
+        if not listing.is_buy_now:
+            return JsonResponse({'success': False, 'message': 'Only buy-now listings can have quantity adjustments.'}, status=400)
+        
+        quantity_before = listing.available_stock
+        new_stock = quantity_before + change
+        
+        if new_stock < 0:
+            return JsonResponse({'success': False, 'message': 'Cannot reduce stock below 0.'}, status=400)
+        
+        listing.available_stock = new_stock
+        listing.quantity = new_stock
+        listing.save()
+        
+        # Log the inventory change
+        change_type = 'restock' if change > 0 else 'sale'
+        InventoryLog.objects.create(
+            listing=listing,
+            change_type=change_type,
+            quantity_before=quantity_before,
+            quantity_after=new_stock,
+            notes=f'Quick adjustment: {change:+d} items'
+        )
+        
+        logger.info(f"User {request.user.id} adjusted quantity for listing {listing.id} by {change}")
+        
+        return JsonResponse({
+            'success': True,
+            'new_stock': new_stock,
+            'message': f'Stock updated to {new_stock}'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in adjust_quantity: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'message': 'An error occurred while adjusting quantity.'}, status=500)
+
 def seed_categories_view(request):
     """Simple view to seed categories - accessible via URL for Render free tier"""
     try:

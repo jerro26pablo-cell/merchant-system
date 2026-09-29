@@ -13,4 +13,6 @@ urlpatterns = [
     path('<slug:slug>/inventory-logs/', views.inventory_logs, name='inventory_logs'),
     path('<slug:slug>/make-official/', views.make_listing_official, name='make_listing_official'),
     path('<slug:slug>/make-draft/', views.make_draft, name='make_draft'),
+    path('bulk-operation/', views.bulk_inventory_operation, name='bulk_inventory_operation'),
+    path('adjust-quantity/', views.adjust_quantity, name='adjust_quantity'),
 ]

@@ -48,9 +48,9 @@
                     <div class="text-end">
                         <h2 class="listing-price mb-0">
                             {% if listing.current_price %}
-                                ${{ listing.current_price }}
+                                ₱{{ listing.current_price }}
                             {% else %}
-                                ${{ listing.buy_now_price }}
+                                ₱{{ listing.buy_now_price }}
                             {% endif %}
                         </h2>
                     </div>
@@ -97,27 +97,27 @@
                     
                     <div class="row mb-3">
                         <div class="col-md-4">
-                            <p class="mb-1"><strong>Starting Bid:</strong> ${{ listing.starting_bid }}</p>
-                            <p class="mb-1"><strong>Current Bid:</strong> ${{ listing.current_bid|default:listing.starting_bid }}</p>
+                            <p class="mb-1"><strong>Starting Bid:</strong> ₱{{ listing.starting_bid }}</p>
+                            <p class="mb-1"><strong>Current Bid:</strong> ₱{{ listing.current_bid|default:listing.starting_bid }}</p>
                         </div>
                         <div class="col-md-4">
                             <p class="mb-1"><strong>Reserve Price:</strong> 
                                 {% if listing.reserve_price %}
-                                    ${{ listing.reserve_price }}
+                                    ₱{{ listing.reserve_price }}
                                 {% else %}
                                     No Reserve
                                 {% endif %}
                             </p>
-                            <p class="mb-1"><strong>Minimum Increment:</strong> ${{ listing.minimum_increment }}</p>
+                            <p class="mb-1"><strong>Minimum Increment:</strong> ₱{{ listing.minimum_increment }}</p>
                         </div>
                         <div class="col-md-4">
                             <p class="mb-1"><strong>Auction Ends:</strong> {{ listing.auction_end|date:"F d, Y H:i" }}</p>
                             {% if listing.time_remaining %}
                                 <p class="mb-1"><strong>Time Remaining:</strong> 
                                     {% if listing.time_remaining.days > 0 %}
-                                        {{ listing.time_remaining.days }}d {{ listing.time_remaining.seconds // 3600 }}h
+                                        {{ listing.time_remaining.days }}d {{ listing.time_remaining.seconds|seconds_to_hours }}h
                                     {% else %}
-                                        {{ listing.time_remaining.seconds // 3600 }}h {{ (listing.time_remaining.seconds % 3600) // 60 }}m
+                                        {{ listing.time_remaining.seconds|seconds_to_hours }}h {{ listing.time_remaining.seconds|seconds_to_minutes }}m
                                     {% endif %}
                                 </p>
                             {% endif %}
@@ -130,7 +130,7 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="input-group">
-                                        <span class="input-group-text">$</span>
+                                        <span class="input-group-text">₱</span>
                                         <input type="number" class="form-control" name="amount" step="0.01" min="{{ listing.current_bid|add:listing.minimum_increment|default:listing.starting_bid }}" required>
                                         <button type="submit" class="btn btn-primary">Place Bid</button>
                                     </div>
@@ -146,13 +146,13 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="input-group mb-2">
-                                        <span class="input-group-text">$</span>
+                                        <span class="input-group-text">₱</span>
                                         <input type="number" class="form-control" name="max_amount" step="0.01" placeholder="Maximum amount" required>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="input-group mb-2">
-                                        <span class="input-group-text">$</span>
+                                        <span class="input-group-text">₱</span>
                                         <input type="number" class="form-control" name="personal_increment" step="0.01" placeholder="Preferred increment (optional)">
                                     </div>
                                 </div>
@@ -171,7 +171,7 @@
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title">Buy Now</h5>
-                    <p class="lead">Price: ${{ listing.buy_now_price }}</p>
+                    <p class="lead">Price: ₱{{ listing.buy_now_price }}</p>
                     <p>Available: {{ listing.available_stock }}</p>
                     
                     {% if user.is_authenticated %}
@@ -213,7 +213,7 @@
                             {% endif %}
                             <div>
                                 <h6 class="mb-1"><a href="{% url 'listing_detail' similar.slug %}">{{ similar.title }}</a></h6>
-                                <p class="mb-0">${{ similar.current_price|default:similar.buy_now_price }}</p>
+                                <p class="mb-0">₱{{ similar.current_price|default:similar.buy_now_price }}</p>
                             </div>
                         </div>
                     {% endfor %}

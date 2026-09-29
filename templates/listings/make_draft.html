@@ -22,7 +22,7 @@
                         <li>Title: {{ listing.title }}</li>
                         <li>Current Status: {{ listing.get_status_display }}</li>
                         <li>Listing Type: {{ listing.get_listing_type_display }}</li>
-                        <li>Price: ${{ listing.current_price|default:listing.buy_now_price }}</li>
+                        <li>Price: ₱{{ listing.current_price|default:listing.buy_now_price }}</li>
                     </ul>
                 </div>
                 

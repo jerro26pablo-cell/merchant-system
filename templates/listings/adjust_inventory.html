@@ -103,7 +103,7 @@
                 <p><strong>Type:</strong> {{ listing.get_listing_type_display }}</p>
                 <p><strong>Status:</strong> {{ listing.get_status_display }}</p>
                 {% if listing.is_buy_now %}
-                    <p><strong>Price:</strong> ${{ listing.buy_now_price }}</p>
+                    <p><strong>Price:</strong> ₱{{ listing.buy_now_price }}</p>
                 {% endif %}
             </div>
         </div>

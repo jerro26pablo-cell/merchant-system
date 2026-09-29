@@ -22,7 +22,7 @@
     <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="card-title">${{ buyer_profile.total_spent }}</h3>
+                <h3 class="card-title">₱{{ buyer_profile.total_spent }}</h3>
                 <p class="card-text">Total Spent</p>
             </div>
         </div>
@@ -76,7 +76,7 @@
                     <h5 class="listing-title">{{ listing.title }}</h5>
                     
                     <div class="mb-2">
-                        <p class="mb-1"><strong>Price:</strong> ${{ listing.current_price|default:listing.buy_now_price }}</p>
+                        <p class="mb-1"><strong>Price:</strong> ₱{{ listing.current_price|default:listing.buy_now_price }}</p>
                         {% if listing.is_buy_now %}
                             <p class="mb-1"><strong>Available:</strong> {{ listing.available_stock }}</p>
                         {% endif %}

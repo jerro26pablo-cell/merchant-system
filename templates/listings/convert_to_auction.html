@@ -20,7 +20,7 @@
                     <h5><i class="bi bi-info-circle"></i> Current Inventory Status</h5>
                     <p><strong>Total Quantity:</strong> {{ listing.quantity }}</p>
                     <p><strong>Available Stock:</strong> {{ listing.available_stock }}</p>
-                    <p><strong>Buy Now Price:</strong> ${{ listing.buy_now_price }}</p>
+                    <p><strong>Buy Now Price:</strong> ₱{{ listing.buy_now_price }}</p>
                 </div>
 
                 <form method="post">
@@ -34,14 +34,14 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="starting_bid" class="form-label">Starting Bid ($)</label>
+                        <label for="starting_bid" class="form-label">Starting Bid (₱)</label>
                         <input type="number" class="form-control" id="starting_bid" name="starting_bid" 
                                step="0.01" min="0" required>
                         <div class="form-text">The minimum bid to start the auction</div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="reserve_price" class="form-label">Reserve Price ($)</label>
+                        <label for="reserve_price" class="form-label">Reserve Price (₱)</label>
                         <input type="number" class="form-control" id="reserve_price" name="reserve_price" 
                                step="0.01" min="0">
                         <div class="form-text">Optional: Minimum price you're willing to accept</div>
@@ -88,7 +88,7 @@
                 <p><strong>Title:</strong> {{ listing.title }}</p>
                 <p><strong>Category:</strong> {{ listing.category.name }}</p>
                 <p><strong>Condition:</strong> {{ listing.get_condition_display }}</p>
-                <p><strong>Current Price:</strong> ${{ listing.buy_now_price }}</p>
+                <p><strong>Current Price:</strong> ₱{{ listing.buy_now_price }}</p>
                 {% if listing.primary_image %}
                     <img src="{{ listing.primary_image.image.url }}" class="img-fluid rounded mt-2" alt="{{ listing.title }}">
                 {% endif %}

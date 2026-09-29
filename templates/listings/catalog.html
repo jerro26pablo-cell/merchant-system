@@ -165,7 +165,7 @@
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <div>
                                                     <small class="text-muted">Current Bid</small>
-                                                    <p class="listing-price mb-0">${{ listing.current_bid|default:listing.starting_bid }}</p>
+                                                    <p class="listing-price mb-0">₱{{ listing.current_bid|default:listing.starting_bid }}</p>
                                                 </div>
                                                 {% if listing.bids.count > 0 %}
                                                     <small class="text-muted">
@@ -179,7 +179,7 @@
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <div>
                                                     <small class="text-muted">Buy Now</small>
-                                                    <p class="listing-price mb-0">${{ listing.buy_now_price }}</p>
+                                                    <p class="listing-price mb-0">₱{{ listing.buy_now_price }}</p>
                                                 </div>
                                                 <small class="text-muted">
                                                     <i class="bi bi-box"></i> {{ listing.available_stock }} left

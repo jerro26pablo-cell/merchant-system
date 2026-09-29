@@ -45,7 +45,7 @@
             <div class="card-body">
                 <h5 class="card-title">Listing Details</h5>
                 <p><strong>Type:</strong> {{ listing.get_listing_type_display }}</p>
-                <p><strong>Price:</strong> ${{ listing.buy_now_price|default:listing.starting_bid }}</p>
+                <p><strong>Price:</strong> ₱{{ listing.buy_now_price|default:listing.starting_bid }}</p>
                 <p><strong>Condition:</strong> {{ listing.get_condition_display }}</p>
                 <p><strong>Quantity:</strong> {{ listing.quantity }}</p>
                 <p><strong>Category:</strong> {{ listing.category.name }}</p>
