@@ -170,12 +170,31 @@ def request_bid_cancellation(request, bid_id):
 @login_required
 def my_bids(request):
     try:
-        bids = Bid.objects.filter(bidder=request.user).select_related('listing').order_by('-created_at')
-        
+        from django.utils import timezone
+
+        all_bids = Bid.objects.filter(bidder=request.user).select_related('listing').order_by('-created_at')
+
+        # Separate into active and past bids
+        active_bids = []
+        past_bids = []
+        now = timezone.now()
+
+        for bid in all_bids:
+            is_active = (bid.listing.status == 'active' and
+                        bid.listing.auction_end and
+                        bid.listing.auction_end > now)
+
+            if is_active:
+                active_bids.append(bid)
+            else:
+                past_bids.append(bid)
+
         context = {
-            'bids': bids,
+            'bids': all_bids,
+            'active_bids': active_bids,
+            'past_bids': past_bids,
         }
-        
+
         return render(request, 'bidding/my_bids.html', context)
     except Exception as e:
         logger.error(f"Error in my_bids: {e}", exc_info=True)

@@ -8,7 +8,7 @@
     <div class="chat-layout">
         <div class="card chat-list">
             {% for conv in conversations %}
-                <a class="{% if conv.id == conversation.id %}is-active{% endif %}" href="{% url 'conversation_detail' conv.id %}">
+                <a class="{% if not active_conv or conv.id == active_conv.id %}is-active{% endif %}" href="{% url 'conversation_detail' conv.id %}">
                     {{ conv.listing.title|default:"Conversation" }}
                     <span class="text-muted">{{ conv.buyer.email|truncatechars:10 }} / {{ conv.seller.email|truncatechars:10 }}</span>
                 </a>
@@ -16,10 +16,10 @@
             {% if not conversations %}<p class="text-muted">No conversations yet. Open a listing and message the seller.</p>{% endif %}
         </div>
         <div class="card chat-pane">
-            {% if conversation %}
-                <h2>{{ conversation.listing.title|default:"Chat" }}</h2>
+            {% if active_conv %}
+                <h2>{{ active_conv.listing.title|default:"Chat" }}</h2>
                 <div class="chat-log" id="chatLog">
-                    {% for msg in messages %}
+                    {% for msg in active_conv.messages.all|dictsortreversed:"created_at" %}
                         <div class="chat-bubble {% if msg.sender_id == request.user.id %}mine{% endif %}">
                             <strong>{{ msg.sender.email|truncatechars:15 }}</strong>
                             <p>{{ msg.content|linebreaks }}</p>
@@ -28,7 +28,7 @@
                 </div>
                 <form id="chatForm" class="chat-compose">
                     {% csrf_token %}
-                    <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
+                    <input type="hidden" name="conversation_id" value="{{ active_conv.id }}">
                     <input type="text" name="content" id="chatInput" required placeholder="Write a message">
                     <button class="btn btn-primary" type="submit" id="sendBtn">Send</button>
                 </form>

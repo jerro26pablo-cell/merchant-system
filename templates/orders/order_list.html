@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}My Orders - Welcome Online Merchant{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+    <h1>My Orders</h1>
+    {% if orders %}
+        {% for order in orders %}
+            <div class="card" style="margin-bottom: 1rem;">
+                <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                    {% if order.listing.primary_image %}
+                        <img src="{{ order.listing.primary_image.image.url }}" alt="" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid var(--line);">
+                    {% endif %}
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 0.5rem;">{{ order.listing.title }}</h3>
+                        <p class="text-muted">Order: {{ order.order_number }}</p>
+                        <p class="text-muted">Status: {{ order.get_status_display }}</p>
+                        {% if order.quantity and order.quantity > 1 %}
+                            <p class="text-muted">Quantity: {{ order.quantity }} × ₱{{ order.amount }}</p>
+                            <p><strong>Total: ₱{{ order.total_amount }}</strong></p>
+                        {% else %}
+                            <p><strong>₱{{ order.total_amount }}</strong></p>
+                        {% endif %}
+                        <p class="text-muted">Shipping to: {{ order.shipping_address }}</p>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">No orders yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

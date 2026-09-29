@@ -3,94 +3,137 @@
 {% block title %}My Bids - Welcome Online Merchant{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h1 class="display-4">My Bids</h1>
-        <p class="lead">Track all your bidding activity</p>
-    </div>
-</div>
+<section class="dashboard">
+    <h1>My Bids</h1>
+    <p class="text-muted">Track all your bids on auction listings.</p>
 
-<div class="row">
-    <div class="col-12">
-        {% if bids %}
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Listing</th>
-                            <th>Image</th>
-                            <th>Bid Amount</th>
-                            <th>Status</th>
-                            <th>Time Placed</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for bid in bids %}
-                            <tr>
-                                <td>
-                                    <a href="{% url 'listing_detail' bid.listing.slug %}">
-                                        <strong>{{ bid.listing.title }}</strong>
+    <!-- Active Bids Section -->
+    <h2 style="margin-top: 1.5rem;">🔴 Currently Running Auctions</h2>
+    {% if bids %}
+        {% regroup bids by listing.status as status_groups %}
+        {% for status, status_bids in status_groups %}
+            {% if status == 'active' %}
+                <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+                    {% for bid in status_bids %}
+                        <div class="card" style="display: flex; gap: 1rem; align-items: flex-start; border-left: 4px solid #16a34a;">
+                            {% if bid.listing.primary_image %}
+                                <img src="{{ bid.listing.primary_image.image.url }}" alt="" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid var(--line);">
+                            {% else %}
+                                <div style="width: 80px; height: 80px; background: #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #475569;">No image</div>
+                            {% endif %}
+
+                            <div style="flex: 1;">
+                                <h3 style="margin: 0 0 0.5rem;">
+                                    <a href="{% url 'listing_detail' bid.listing.slug %}" style="text-decoration: none; color: var(--ink);">
+                                        {{ bid.listing.title }}
                                     </a>
-                                    <br>
-                                    <small class="text-muted">{{ bid.listing.category.name }}</small>
-                                </td>
-                                <td>
+                                </h3>
+
+                                <div style="display: flex; gap: 1rem; margin: 0.25rem 0;">
+                                    <span style="font-weight: bold; color: #d32f2f;">Your bid: ₱{{ bid.amount }}</span>
+                                    <span class="text-muted">Current high: ₱{{ bid.listing.current_bid|default:bid.listing.starting_bid }}</span>
+                                </div>
+
+                                {% if bid.personal_increment %}
+                                    <p class="text-muted" style="margin: 0.25rem 0; font-size: 0.8rem;">
+                                        Your increment: ₱{{ bid.personal_increment }} (auto-bidding uses this)
+                                    </p>
+                                {% endif %}
+
+                                <div style="margin: 0.25rem 0;">
+                                    <span style="padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;
+                                           background: {% if bid.status in 'winning' 'active' %}#dcfce7{% else %}#fee2e2{% endif %};
+                                           color: {% if bid.status in 'winning' 'active' %}#166534{% else %}#991b1b{% endif %};">
+                                        {{ bid.status|upper }}
+                                    </span>
+                                    {% if bid.is_auto_bid %}
+                                        <span style="padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; background: #e0f2fe; color: #0369a1;">PROXY</span>
+                                    {% endif %}
+                                </div>
+
+                                <p class="text-muted" style="margin: 0.25rem 0;">
+                                    Placed: {{ bid.created_at|date:"M j, Y g:i A" }}
+                                </p>
+
+                                {% if bid.listing.auction_end %}
+                                    <p class="text-muted" style="margin: 0.25rem 0;">
+                                        Auction ends: {{ bid.listing.auction_end|date:"M j, Y g:i A" }}
+                                    </p>
+                                {% endif %}
+
+                                <div style="margin-top: 0.5rem;">
+                                    <a class="btn btn-sm btn-primary" href="{% url 'listing_detail' bid.listing.slug %}">View Auction</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    <!-- Past Bids Section - Hidden by default -->
+    <div style="margin-top: 2rem;">
+        <button class="btn btn-sm btn-outline-secondary" type="button" onclick="document.getElementById('pastBidsSection').style.display = document.getElementById('pastBidsSection').style.display === 'none' ? 'block' : 'none'">
+            Show Past Bids
+        </button>
+        <div id="pastBidsSection" style="display: none; margin-top: 1rem;">
+            <h2 style="margin-top: 1rem;">📜 Past Bids</h2>
+            {% if bids %}
+                {% regroup bids by listing.status as status_groups %}
+                {% for status, status_bids in status_groups %}
+                    {% if status != 'active' %}
+                        <div style="display: grid; gap: 1rem;">
+                            {% for bid in status_bids %}
+                                <div class="card" style="display: flex; gap: 1rem; align-items: flex-start; border-left: 4px solid #94a3b8;">
                                     {% if bid.listing.primary_image %}
-                                        <img src="{{ bid.listing.primary_image.image.url }}" 
-                                             class="rounded" 
-                                             style="width: 50px; height: 50px; object-fit: cover;" 
-                                             alt="{{ bid.listing.title }}">
+                                        <img src="{{ bid.listing.primary_image.image.url }}" alt="" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid var(--line);">
                                     {% else %}
-                                        <img src="https://via.placeholder.com/50x50?text=No+Image" 
-                                             class="rounded" 
-                                             style="width: 50px; height: 50px; object-fit: cover;" 
-                                             alt="{{ bid.listing.title }}">
+                                        <div style="width: 80px; height: 80px; background: #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #475569;">No image</div>
                                     {% endif %}
-                                </td>
-                                <td>
-                                    <strong>${{ bid.amount }}</strong>
-                                </td>
-                                <td>
-                                    {% if bid.status == 'active' %}
-                                        <span class="badge bg-success">Active</span>
-                                    {% elif bid.status == 'outbid' %}
-                                        <span class="badge bg-danger">Outbid</span>
-                                    {% elif bid.status == 'won' %}
-                                        <span class="badge bg-primary">Won</span>
-                                    {% elif bid.status == 'cancelled' %}
-                                        <span class="badge bg-secondary">Cancelled</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">{{ bid.status }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {{ bid.created_at|date:"M d, Y H:i" }}
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{% url 'listing_detail' bid.listing.slug %}" class="btn btn-outline-primary">
-                                            View Listing
-                                        </a>
-                                        {% if bid.status == 'active' %}
-                                            <a href="{% url 'request_bid_cancellation' bid.id %}" class="btn btn-outline-danger">
-                                                Cancel
+
+                                    <div style="flex: 1;">
+                                        <h3 style="margin: 0 0 0.5rem;">
+                                            <a href="{% url 'listing_detail' bid.listing.slug %}" style="text-decoration: none; color: var(--ink);">
+                                                {{ bid.listing.title }}
                                             </a>
-                                        {% endif %}
+                                        </h3>
+
+                                        <div style="display: flex; gap: 1rem; margin: 0.25rem 0;">
+                                            <span style="font-weight: bold;">Your bid: ₱{{ bid.amount }}</span>
+                                            <span class="text-muted">Final price: ₱{{ bid.listing.current_bid|default:bid.listing.starting_bid }}</span>
+                                        </div>
+
+                                        <div style="margin: 0.25rem 0;">
+                                            <span style="padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;
+                                                   background: {% if bid.status == 'won' %}#dcfce7{% else %}#f1f5f9{% endif %};
+                                                   color: {% if bid.status == 'won' %}#166534{% else %}#64748b{% endif %};">
+                                                {{ bid.status|upper }}
+                                            </span>
+                                            {% if bid.is_auto_bid %}
+                                                <span style="padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; background: #e0f2fe; color: #0369a1;">PROXY</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <p class="text-muted" style="margin: 0.25rem 0;">
+                                            Placed: {{ bid.created_at|date:"M j, Y g:i A" }}
+                                        </p>
+
+                                        <div style="margin-top: 0.5rem;">
+                                            <a class="btn btn-sm btn-outline-secondary" href="{% url 'listing_detail' bid.listing.slug %}">View Listing</a>
+                                        </div>
                                     </div>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="alert alert-info">
-                <h4>No bids yet</h4>
-                <p>You haven't placed any bids yet. Start browsing the catalog to find items to bid on!</p>
-                <a href="{% url 'catalog' %}" class="btn btn-primary">Browse Catalog</a>
-            </div>
-        {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <div class="card text-center" style="padding: 1rem;">
+                    <p class="text-muted">No past bids found.</p>
+                </div>
+            {% endif %}
+        </div>
     </div>
-</div>
+</section>
 {% endblock %}

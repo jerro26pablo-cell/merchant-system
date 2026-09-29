@@ -87,7 +87,17 @@ def listing_catalog(request):
         paginator = Paginator(listings, 12)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
-        
+
+        # Check wishlist status for authenticated users
+        wishlist_items = {}
+        if request.user.is_authenticated:
+            user_wishlist = Wishlist.objects.filter(user=request.user).values_list('listing_id', flat=True)
+            wishlist_items = set(user_wishlist)
+
+        # Add is_wishlisted to each listing
+        for listing in page_obj:
+            listing.is_wishlisted = listing.id in wishlist_items
+
         context = {
             'page_obj': page_obj,
             'search_query': search_query,
@@ -1026,9 +1036,15 @@ def conversation_detail(request, conversation_id):
             else:
                 messages.error(request, 'Message cannot be empty.')
         
+        # Get all conversations for the sidebar
+        all_conversations = Conversation.objects.filter(
+            Q(buyer=request.user) | Q(seller=request.user)
+        ).select_related('listing', 'buyer', 'seller').order_by('-updated_at')
+
         context = {
             'conversation': conversation,
             'messages': conversation.messages.all().order_by('created_at'),
+            'conversations': all_conversations,
         }
         
         return render(request, 'listings/conversation_detail.html', context)

@@ -1,261 +1,113 @@
 {% extends 'base.html' %}
 {% load listing_filters %}
 
-{% block title %}Browse Catalog - Welcome Online Merchant{% endblock %}
+{% block title %}Marketplace - Welcome Online Merchant{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h1 class="display-4">Browse Catalog</h1>
-        <p class="lead">Discover amazing deals and auctions</p>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Filters Sidebar -->
-    <div class="col-lg-3 mb-4">
-        <div class="filter-section">
-            <h5 class="mb-3"><i class="bi bi-funnel"></i> Filters</h5>
-            
-            <form method="GET" action="{% url 'catalog' %}">
-                <div class="mb-3">
-                    <label class="form-label">Search</label>
-                    <div class="input-group">
-                        <input type="text" class="form-control" name="search" value="{{ search_query }}" placeholder="Search products...">
-                        <button class="btn btn-outline-secondary" type="submit">
-                            <i class="bi bi-search"></i>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">Listing Type</label>
-                    <select class="form-select" name="type">
-                        <option value="">All Types</option>
-                        <option value="auction" {% if listing_type == 'auction' %}selected{% endif %}>🔥 Auctions</option>
-                        <option value="buy_now" {% if listing_type == 'buy_now' %}selected{% endif %}>💰 Buy Now</option>
-                        <option value="both" {% if listing_type == 'both' %}selected{% endif %}>⚡ Both</option>
-                    </select>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">Condition</label>
-                    <select class="form-select" name="condition">
-                        <option value="">All Conditions</option>
-                        <option value="new" {% if condition == 'new' %}selected{% endif %}>✨ New</option>
-                        <option value="like_new" {% if condition == 'like_new' %}selected{% endif %}>🌟 Like New</option>
-                        <option value="good" {% if condition == 'good' %}selected{% endif %}>👍 Good</option>
-                        <option value="fair" {% if condition == 'fair' %}selected{% endif %}>👌 Fair</option>
-                        <option value="for_parts" {% if condition == 'for_parts' %}selected{% endif %}>🔧 For Parts</option>
-                    </select>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">Category</label>
-                    <select class="form-select" name="category">
-                        <option value="">All Categories</option>
-                        {% for category in categories %}
-                            <option value="{{ category.slug }}" {% if category_slug == category.slug %}selected{% endif %}>{{ category.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">Price Range</label>
-                    <div class="row">
-                        <div class="col-6">
-                            <label class="form-label text-muted small">Minimum</label>
-                            <input type="number" class="form-control" name="min_price" placeholder="Min" value="{{ min_price }}">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label text-muted small">Maximum</label>
-                            <input type="number" class="form-control" name="max_price" placeholder="Max" value="{{ max_price }}">
-                        </div>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn btn-primary w-100 mb-2">
-                    <i class="bi bi-check-circle"></i> Apply Filters
-                </button>
-                <a href="{% url 'catalog' %}" class="btn btn-outline-secondary w-100">
-                    <i class="bi bi-x-circle"></i> Clear Filters
-                </a>
-            </form>
+<section class="dashboard">
+    <div class="dash-top">
+        <div>
+            <h1>Marketplace</h1>
+            <p class="lead">Compare prices, bid live, and message merchants.</p>
         </div>
-        
-        <!-- Quick Stats -->
-        <div class="filter-section mt-3">
-            <h5 class="mb-3"><i class="bi bi-graph-up"></i> Quick Stats</h5>
-            <div class="row text-center">
-                <div class="col-6 mb-2">
-                    <div class="card p-2">
-                        <h4 class="mb-0 text-primary">{{ page_obj.paginator.count }}</h4>
-                        <small class="text-muted">Total Items</small>
-                    </div>
-                </div>
-                <div class="col-6 mb-2">
-                    <div class="card p-2">
-                        <h4 class="mb-0 text-success">{{ page_obj.number }}</h4>
-                        <small class="text-muted">Current Page</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Listings Grid -->
-    <div class="col-lg-9">
-        {% if page_obj %}
-            <div class="row">
-                {% for listing in page_obj %}
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card listing-card h-100">
-                            <div class="position-relative">
-                                {% if listing.primary_image %}
-                                    <img src="{{ listing.primary_image.image.url }}" class="listing-image" alt="{{ listing.primary_image.alt_text|default:listing.title }}" onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Available';">
-                                {% else %}
-                                    <img src="https://via.placeholder.com/300x200?text=No+Image" class="listing-image" alt="{{ listing.title }}">
-                                {% endif %}
-                                
-                                <!-- Listing Type Badge -->
-                                <div class="position-absolute top-0 end-0 m-2">
-                                    {% if listing.listing_type == 'auction' %}
-                                        <span class="badge badge-auction">🔥 Auction</span>
-                                    {% elif listing.listing_type == 'buy_now' %}
-                                        <span class="badge badge-buy-now">💰 Buy Now</span>
-                                    {% else %}
-                                        <span class="badge badge-both">⚡ Both</span>
-                                    {% endif %}
-                                </div>
-                                
-                                <!-- Time Remaining for Auctions -->
-                                {% if listing.is_auction and listing.time_remaining %}
-                                    <div class="position-absolute bottom-0 start-0 m-2">
-                                        <span class="badge bg-danger">
-                                            <i class="bi bi-clock"></i> 
-                                            {% if listing.time_remaining.days > 0 %}
-                                                {{ listing.time_remaining.days }}d {{ listing.time_remaining.seconds|seconds_to_hours }}h
-                                            {% else %}
-                                                {{ listing.time_remaining.seconds|seconds_to_hours }}h {{ listing.time_remaining.seconds|seconds_to_minutes }}m
-                                            {% endif %}
-                                        </span>
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="card-body d-flex flex-column">
-                                <div class="mb-2">
-                                    <span class="badge bg-secondary">{{ listing.get_condition_display }}</span>
-                                </div>
-                                
-                                <h5 class="listing-title">{{ listing.title }}</h5>
-                                
-                                <p class="listing-meta mb-2">
-                                    <i class="bi bi-person-circle"></i> {{ listing.seller.email|truncatechars:20 }}
-                                </p>
-                                
-                                <p class="listing-meta mb-2">
-                                    <i class="bi bi-tag"></i> {{ listing.category.name }}
-                                </p>
-                                
-                                <div class="mt-auto">
-                                    <!-- Price Display -->
-                                    <div class="price-section mb-2">
-                                        {% if listing.is_auction %}
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <small class="text-muted">Current Bid</small>
-                                                    <p class="listing-price mb-0">₱{{ listing.current_bid|default:listing.starting_bid }}</p>
-                                                </div>
-                                                {% if listing.bids.count > 0 %}
-                                                    <small class="text-muted">
-                                                        <i class="bi bi-gavel"></i> {{ listing.bids.count }} bids
-                                                    </small>
-                                                {% endif %}
-                                            </div>
-                                        {% endif %}
-                                        
-                                        {% if listing.is_buy_now %}
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <small class="text-muted">Buy Now</small>
-                                                    <p class="listing-price mb-0">₱{{ listing.buy_now_price }}</p>
-                                                </div>
-                                                <small class="text-muted">
-                                                    <i class="bi bi-box"></i> {{ listing.available_stock }} left
-                                                </small>
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                    
-                                    <!-- Quick Actions -->
-                                    <div class="btn-group w-100" role="group">
-                                        <a href="{% url 'listing_detail' listing.slug %}" class="btn btn-primary">
-                                            <i class="bi bi-eye"></i> View
-                                        </a>
-                                        {% if listing.is_auction and request.user != listing.seller %}
-                                            <a href="{% url 'listing_detail' listing.slug %}#bidding" class="btn btn-outline-primary">
-                                                <i class="bi bi-gavel"></i> Bid
-                                            </a>
-                                        {% endif %}
-                                        {% if listing.is_buy_now and request.user != listing.seller and listing.available_stock > 0 %}
-                                            <a href="{% url 'add_to_wishlist' listing.slug %}" class="btn btn-outline-success">
-                                                <i class="bi bi-heart"></i> Add
-                                            </a>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-            
-            <!-- Pagination -->
-            {% if page_obj.has_other_pages %}
-                <nav aria-label="Page navigation" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        {% if page_obj.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if listing_type %}&type={{ listing_type }}{% endif %}{% if condition %}&condition={{ condition }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}">
-                                    <i class="bi bi-chevron-double-left"></i>
-                                </a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if listing_type %}&type={{ listing_type }}{% endif %}{% if condition %}&condition={{ condition }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}">
-                                    <i class="bi bi-chevron-left"></i>
-                                </a>
-                            </li>
-                        {% endif %}
-                        
-                        <li class="page-item active">
-                            <span class="page-link">{{ page_obj.number }}</span>
-                        </li>
-                        
-                        {% if page_obj.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if listing_type %}&type={{ listing_type }}{% endif %}{% if condition %}&condition={{ condition }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}">
-                                    <i class="bi bi-chevron-right"></i>
-                                </a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if listing_type %}&type={{ listing_type }}{% endif %}{% if condition %}&condition={{ condition }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}">
-                                    <i class="bi bi-chevron-double-right"></i>
-                                </a>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            {% endif %}
-        {% else %}
-            <div class="alert alert-info text-center">
-                <h4><i class="bi bi-inbox"></i> No listings found</h4>
-                <p>Try adjusting your filters or check back later for new listings.</p>
-                <a href="{% url 'catalog' %}" class="btn btn-primary">
-                    <i class="bi bi-arrow-clockwise"></i> Clear Filters
-                </a>
-            </div>
+        {% if user.is_authenticated and user.seller_enabled %}
+            <a class="btn btn-primary" href="{% url 'create_listing' %}">New listing</a>
         {% endif %}
     </div>
-</div>
+
+    <div class="compact-filter-container">
+        <button class="compact-filter-toggle" onclick="toggleCompactFilter()" id="filterToggle">
+            <span id="filterToggleText">Show Filters</span> <span id="filterArrow">▼</span>
+        </button>
+
+        <form class="compact-filter-bar" id="compactFilter" method="get" action="{% url 'catalog' %}">
+            <div class="compact-filter-row">
+                <input type="text" id="search" name="search" value="{{ search_query }}" placeholder="Search..." class="compact-search">
+
+                <select id="category" name="category" class="compact-select">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                        <option value="{{ category.slug }}" {% if category_slug == category.slug %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <select id="condition" name="condition" class="compact-select">
+                    <option value="">Any Condition</option>
+                    <option value="new" {% if condition == 'new' %}selected{% endif %}>New</option>
+                    <option value="like_new" {% if condition == 'like_new' %}selected{% endif %}>Like New</option>
+                    <option value="good" {% if condition == 'good' %}selected{% endif %}>Good</option>
+                    <option value="fair" {% if condition == 'fair' %}selected{% endif %}>Fair</option>
+                    <option value="for_parts" {% if condition == 'for_parts' %}selected{% endif %}>For Parts</option>
+                </select>
+                <select id="type" name="type" class="compact-select">
+                    <option value="">Any Type</option>
+                    <option value="auction" {% if listing_type == 'auction' %}selected{% endif %}>Auction</option>
+                    <option value="buy_now" {% if listing_type == 'buy_now' %}selected{% endif %}>Buy Now</option>
+                    <option value="both" {% if listing_type == 'both' %}selected{% endif %}>Both</option>
+                </select>
+                <button class="btn btn-sm btn-primary" type="submit">Search</button>
+            </div>
+
+            <div class="compact-filter-advanced" id="advancedFilters">
+                <div class="compact-filter-row">
+                    <input type="number" step="0.01" id="min_price" name="min_price" value="{{ min_price }}" placeholder="Min price" class="compact-input">
+                    <input type="number" step="0.01" id="max_price" name="max_price" value="{{ max_price }}" placeholder="Max price" class="compact-input">
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="browse-catalog-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; margin-top: 1.5rem; width: 100%; max-width: 100%;">
+        {% if not page_obj %}
+            <p class="text-muted">No listings match those filters yet.</p>
+        {% endif %}
+        {% for listing in page_obj %}
+            <a class="browse-catalog-item" href="{% url 'listing_detail' listing.slug %}" style="padding: 0; display: flex; flex-direction: column; text-decoration: none; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; height: auto; background: white; max-width: 100%;">
+                {% if listing.primary_image %}
+                    <img src="{{ listing.primary_image.image.url }}" alt="" class="browse-catalog-img" style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px 8px 0 0; margin-bottom: 0; display: block;" onerror="this.src='https://via.placeholder.com/100x100?text=No+Image';">
+                {% else %}
+                    <div class="browse-catalog-placeholder" style="width: 100%; height: 100px; background: #cbd5e1; border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center; color: #475569; margin-bottom: 0; font-size: 0.8rem;">No image</div>
+                {% endif %}
+
+                <div class="browse-catalog-content" style="flex: 1; display: flex; flex-direction: column; padding: 0.4rem; background: white; border-top: 1px solid #cbd5e1;">
+                    <h3 style="margin: 0 0 0.25rem 0; font-size: 0.75rem; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 1.4rem;">{{ listing.title }}</h3>
+                    <div class="browse-catalog-price" style="font-size: 0.8rem; font-weight: bold; color: #d32f2f; margin: 0.1rem 0;">₱{{ listing.display_price }}</div>
+                    <p class="text-muted" style="margin: 0.1rem 0; font-size: 0.65rem; color: #475569;">{{ listing.category.name|default:"Uncategorized" }}</p>
+                    <p class="text-muted" style="margin: 0.1rem 0; font-size: 0.65rem; color: #475569;">{{ listing.get_listing_type_display }}</p>
+                    {% if user.is_authenticated %}
+                        <button class="btn btn-sm btn-outline-secondary wish-btn-{{ listing.id }} {% if listing.is_wishlisted %}btn-wishlisted{% endif %}"
+                                type="button"
+                                onclick="event.preventDefault(); toggleWishlist({{ listing.id }}, this)"
+                                style="margin-top: 0.25rem; font-size: 0.65rem; padding: 0.2rem 0.4rem;">
+                            {% if listing.is_wishlisted %}❤️{% else %}♡{% endif %}
+                        </button>
+                    {% endif %}
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+</section>
+
+<script>
+function toggleCompactFilter() {
+    const filter = document.getElementById('compactFilter');
+    const toggleText = document.getElementById('filterToggleText');
+    const arrow = document.getElementById('filterArrow');
+
+    if (filter.style.display === 'none') {
+        filter.style.display = 'block';
+        toggleText.textContent = 'Hide Filters';
+        arrow.textContent = '▲';
+    } else {
+        filter.style.display = 'none';
+        toggleText.textContent = 'Show Filters';
+        arrow.textContent = '▼';
+    }
+}
+
+// Hide filter by default
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('compactFilter').style.display = 'none';
+});
+</script>
 {% endblock %}
