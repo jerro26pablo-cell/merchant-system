@@ -757,7 +757,7 @@ def checkout_wishlist(request):
                 order_type='buy_now',
                 quantity=wishlist_item.quantity,
                 total_amount=wishlist_item.total_price,
-                shipping_address=request.user.profile.address if hasattr(request.user, 'profile') else '',
+                shipping_address=request.user.buyer_profile.shipping_address if hasattr(request.user, 'buyer_profile') else request.user.address if request.user.address else 'No address provided',
                 status='pending'
             )
             
