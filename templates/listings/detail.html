@@ -1,15 +1,28 @@
 {% extends 'base.html' %}
+{% load listing_filters %}
 
 {% block title %}{{ listing.title }} - Welcome Online Merchant{% endblock %}
 
 {% block extra_js %}
+{% if listing.is_buy_now and listing.available_stock > 0 %}
 <script>
-const buyNowPrice = {{ listing.buy_now_price }};
-const maxQuantity = {{ listing.available_stock }};
+// Get values from data attributes instead of Django template variables
+function getListingData() {
+    const buyNowSection = document.getElementById('buy-now');
+    if (buyNowSection) {
+        return {
+            buyNowPrice: parseFloat(buyNowSection.dataset.price) || 0,
+            maxQuantity: parseInt(buyNowSection.dataset.maxQty) || 0
+        };
+    }
+    return { buyNowPrice: 0, maxQuantity: 0 };
+}
+
+const listingData = getListingData();
 
 function incrementQty() {
     const qtyInput = document.getElementById('quantity');
-    if (qtyInput && parseInt(qtyInput.value) < maxQuantity) {
+    if (qtyInput && parseInt(qtyInput.value) < listingData.maxQuantity) {
         qtyInput.value = parseInt(qtyInput.value) + 1;
         updateTotal();
     }
@@ -27,9 +40,48 @@ function updateTotal() {
     const qtyInput = document.getElementById('quantity');
     if (qtyInput) {
         const qty = parseInt(qtyInput.value);
-        const total = buyNowPrice * qty;
+        const total = listingData.buyNowPrice * qty;
         document.getElementById('total-price').textContent = '₱' + total.toFixed(2);
     }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showAddToWishlist() {
+    const qty = document.getElementById('quantity').value;
+    const formData = new FormData();
+    formData.append('quantity', qty);
+
+    fetch(`/listings/wishlist/add/{{ listing.slug }}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.text())
+    .then(data => {
+        // Redirect to wishlist on success
+        window.location.href = '/listings/wishlist/';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error adding to wishlist');
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -38,12 +90,13 @@ document.addEventListener('DOMContentLoaded', function() {
         qtyInput.addEventListener('change', function() {
             let qty = parseInt(this.value);
             if (qty < 1) this.value = 1;
-            if (qty > maxQuantity) this.value = maxQuantity;
+            if (qty > listingData.maxQuantity) this.value = listingData.maxQuantity;
             updateTotal();
         });
     }
 });
 </script>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -145,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <p class="mb-1"><strong>Current Bid:</strong> ₱{{ listing.current_bid|default:listing.starting_bid }}</p>
                         </div>
                         <div class="col-md-4">
-                            <p class="mb-1"><strong>Reserve Price:</strong> 
+                            <p class="mb-1"><strong>Reserve Price:</strong>
                                 {% if listing.reserve_price %}
                                     ₱{{ listing.reserve_price }}
                                 {% else %}
@@ -157,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="col-md-4">
                             <p class="mb-1"><strong>Auction Ends:</strong> {{ listing.auction_end|date:"F d, Y H:i" }}</p>
                             {% if listing.time_remaining %}
-                                <p class="mb-1"><strong>Time Remaining:</strong> 
+                                <p class="mb-1"><strong>Time Remaining:</strong>
                                     {% if listing.time_remaining.days > 0 %}
                                         {{ listing.time_remaining.days }}d {{ listing.time_remaining.seconds|seconds_to_hours }}h
                                     {% else %}
@@ -167,8 +220,48 @@ document.addEventListener('DOMContentLoaded', function() {
                             {% endif %}
                         </div>
                     </div>
-                    
-                    {% if user.is_authenticated and listing.status == 'active' %}
+
+                    <!-- Seller: View Bids -->
+                    {% if request.user == listing.seller %}
+                        <hr>
+                        <h6>Bid History</h6>
+                        {% if listing.bids.exists %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Bidder</th>
+                                            <th>Amount</th>
+                                            <th>Time</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for bid in listing.bids.all %}
+                                            <tr>
+                                                <td>{{ bid.bidder.email }}</td>
+                                                <td>₱{{ bid.amount }}</td>
+                                                <td>{{ bid.created_at|date:"M d, H:i" }}</td>
+                                                <td>
+                                                    {% if bid.status == 'active' %}
+                                                        <span class="badge bg-success">Active</span>
+                                                    {% elif bid.status == 'outbid' %}
+                                                        <span class="badge bg-warning">Outbid</span>
+                                                    {% elif bid.status == 'winning' %}
+                                                        <span class="badge bg-primary">Winning</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">{{ bid.status }}</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No bids yet.</p>
+                        {% endif %}
+                    {% elif user.is_authenticated and listing.status in ['active', 'official'] %}
                         <form method="POST" action="{% url 'place_bid' listing.slug %}">
                             {% csrf_token %}
                             <div class="row">
@@ -181,9 +274,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                             </div>
                         </form>
-                        
+
                         <hr>
-                        
+
                         <h6>Set Maximum Bid (Auto-Bid)</h6>
                         <form method="POST" action="{% url 'set_max_bid_cap' listing.slug %}">
                             {% csrf_token %}
@@ -211,39 +304,109 @@ document.addEventListener('DOMContentLoaded', function() {
         {% endif %}
         
         <!-- Buy Now Section -->
-        {% if listing.is_buy_now and listing.available_stock > 0 and request.user != listing.seller %}
-            <div class="card mb-4" id="buy-now">
-                <div class="card-body">
-                    <h5 class="card-title">Buy Now</h5>
-                    <p class="lead">Price: ₱{{ listing.buy_now_price }}</p>
-                    <p>Available: {{ listing.available_stock }}</p>
-                    
-                    {% if user.is_authenticated %}
-                        <form method="POST" action="{% url 'add_to_cart' listing.slug %}">
-                            {% csrf_token %}
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Quantity</label>
-                                    <div class="input-group">
-                                        <button type="button" class="btn btn-outline-secondary" onclick="decrementQty()">-</button>
-                                        <input type="number" class="form-control text-center" name="quantity" id="quantity" value="1" min="1" max="{{ listing.available_stock }}" required>
-                                        <button type="button" class="btn btn-outline-secondary" onclick="incrementQty()">+</button>
+        {% if listing.is_buy_now %}
+            <!-- Seller: View Quantity and Details -->
+            {% if request.user == listing.seller %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Inventory Details</h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <p class="mb-1"><strong>Total Quantity:</strong> {{ listing.quantity }}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="mb-1"><strong>Available Stock:</strong> {{ listing.available_stock }}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="mb-1"><strong>Quantity Sold:</strong> {{ listing.quantity_sold }}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="mb-1"><strong>Price:</strong> ₱{{ listing.buy_now_price }}</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <h6>Recent Orders</h6>
+                        {% if listing.orders.exists %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Order #</th>
+                                            <th>Buyer</th>
+                                            <th>Qty</th>
+                                            <th>Total</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for order in listing.orders.all|slice:":5" %}
+                                            <tr>
+                                                <td>{{ order.order_number }}</td>
+                                                <td>{{ order.buyer.email }}</td>
+                                                <td>{{ order.quantity }}</td>
+                                                <td>₱{{ order.total_amount }}</td>
+                                                <td>
+                                                    <span class="badge bg-{{ 'success' if order.status == 'delivered' else 'warning' if order.status == 'pending' else 'secondary' }}">
+                                                        {{ order.get_status_display }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No orders yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% elif listing.available_stock > 0 %}
+                <!-- Buyer: Buy Now with Bulk Option -->
+                <div class="card mb-4" id="buy-now" data-price="{{ listing.buy_now_price }}" data-max-qty="{{ listing.available_stock }}">
+                    <div class="card-body">
+                        <h5 class="card-title">Buy Now</h5>
+                        <p class="lead">Price: ₱{{ listing.buy_now_price }}</p>
+                        <p>Available: {{ listing.available_stock }}</p>
+
+                        {% if user.is_authenticated %}
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-primary w-100" onclick="showAddToWishlist()">
+                                    <i class="bi bi-heart"></i> Add to Wishlist
+                                </button>
+                            </div>
+                            <form method="POST" action="{% url 'add_to_cart' listing.slug %}">
+                                {% csrf_token %}
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Quantity</label>
+                                        <div class="input-group">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="decrementQty()">-</button>
+                                            <input type="number" class="form-control text-center" name="quantity" id="quantity" value="1" min="1" max="{{ listing.available_stock }}" required>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="incrementQty()">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Total</label>
+                                        <p class="form-control-plaintext" id="total-price">₱{{ listing.buy_now_price }}</p>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Total</label>
-                                    <p class="form-control-plaintext" id="total-price">₱{{ listing.buy_now_price }}</p>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-success btn-lg w-100">
-                                <i class="bi bi-cart"></i> Buy Now
-                            </button>
-                        </form>
-                    {% else %}
-                        <p class="text-muted">Please <a href="{% url 'login' %}">login</a> to purchase.</p>
-                    {% endif %}
+                                <button type="submit" class="btn btn-success btn-lg w-100">
+                                    <i class="bi bi-cart"></i> Buy Now
+                                </button>
+                            </form>
+                        {% else %}
+                            <p class="text-muted">Please <a href="{% url 'login' %}">login</a> to purchase.</p>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
+            {% else %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Out of Stock</h5>
+                        <p class="text-muted">This item is currently out of stock.</p>
+                    </div>
+                </div>
+            {% endif %}
         {% endif %}
     </div>
     
@@ -258,6 +421,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p><strong>Business:</strong> {{ listing.seller.seller_profile.business_name|default:"Not specified" }}</p>
                     <p><strong>Rating:</strong> {{ listing.seller.seller_profile.rating }}/5.0</p>
                     <p><strong>Total Sales:</strong> {{ listing.seller.seller_profile.total_sales }}</p>
+                {% endif %}
+                {% if user.is_authenticated and user != listing.seller %}
+                    <a href="{% url 'start_conversation' listing.slug %}" class="btn btn-outline-primary">
+                        <i class="bi bi-chat"></i> Message Seller
+                    </a>
                 {% endif %}
             </div>
         </div>

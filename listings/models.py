@@ -50,30 +50,27 @@ class Listing(models.Model):
     # Pricing
     starting_bid = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     current_bid = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    buy_now_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    buy_now_price = models.DecimalField(max_digits=10, decimal_places=2)
     reserve_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    display_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     minimum_increment = models.DecimalField(max_digits=10, decimal_places=2, default=1.00)
+    display_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     # Auction timing
     auction_start = models.DateTimeField(null=True, blank=True)
     auction_end = models.DateTimeField(null=True, blank=True)
-    anti_snipe_seconds = models.IntegerField(default=300, help_text=_('Seconds to extend if bid placed near end'))
-    auto_relist = models.BooleanField(default=False)
+    anti_snipe_seconds = models.IntegerField(default=300, help_text=_('Seconds to extend auction if bid placed in final seconds'))
     
-    # Size specification
+    # Size
     size = models.ForeignKey(SizeSpecification, on_delete=models.SET_NULL, null=True, blank=True, related_name='listings')
     
-    # Shipping
-    shipping_address = models.TextField(blank=True, help_text=_('Shipping address for this listing'))
-    
-    # Tracking
+    # Stats
     view_count = models.IntegerField(default=0)
-    original_listing = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='relistings')
-    inventory_source = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='auction_conversions', help_text=_('Original buy-now listing if this is an auction created from inventory'))
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # Relationships
+    original_listing = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='relistings')
+    inventory_source = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='auction_conversions')
     
     class Meta:
         db_table = 'listings'
@@ -81,10 +78,11 @@ class Listing(models.Model):
         verbose_name_plural = _('Listings')
         ordering = ['-created_at']
         indexes = [
+            models.Index(fields=['slug']),
+            models.Index(fields=['seller', 'status']),
             models.Index(fields=['status', 'listing_type']),
             models.Index(fields=['category']),
-            models.Index(fields=['seller']),
-            models.Index(fields=['slug']),
+            models.Index(fields=['created_at']),
         ]
     
     def __str__(self):
@@ -92,13 +90,13 @@ class Listing(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
-            # Ensure unique slug
+            base_slug = slugify(self.title)
+            slug = base_slug
             counter = 1
-            original_slug = self.slug
-            while Listing.objects.filter(slug=self.slug).exists():
-                self.slug = f"{original_slug}-{counter}"
+            while Listing.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
                 counter += 1
+            self.slug = slug
         super().save(*args, **kwargs)
     
     def get_absolute_url(self):
@@ -154,16 +152,34 @@ class ListingImage(models.Model):
         db_table = 'listing_images'
         verbose_name = _('Listing Image')
         verbose_name_plural = _('Listing Images')
-        ordering = ['sort_order']
+        ordering = ['sort_order', '-is_primary']
     
     def __str__(self):
-        return f"{self.listing.title} - Image {self.sort_order}"
+        return f"Image for {self.listing.title}"
+
+class ListingView(models.Model):
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='views')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    ip_address = models.GenericIPAddressField()
+    viewed_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'listing_views'
+        verbose_name = _('Listing View')
+        verbose_name_plural = _('Listing Views')
+        ordering = ['-viewed_at']
+        indexes = [
+            models.Index(fields=['listing', '-viewed_at']),
+            models.Index(fields=['user', '-viewed_at']),
+        ]
+    
+    def __str__(self):
+        return f"View of {self.listing.title} by {self.user or self.ip_address}"
 
 class ListingAttribute(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='attributes')
     attribute = models.ForeignKey('categories.CategoryAttribute', on_delete=models.CASCADE)
     value = models.CharField(max_length=500)
-    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         db_table = 'listing_attributes'
@@ -172,35 +188,19 @@ class ListingAttribute(models.Model):
         unique_together = ['listing', 'attribute']
     
     def __str__(self):
-        return f"{self.listing.title} - {self.attribute.name}: {self.value}"
-
-class ListingView(models.Model):
-    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='views')
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    viewed_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        db_table = 'listing_views'
-        verbose_name = _('Listing View')
-        verbose_name_plural = _('Listing Views')
-        ordering = ['-viewed_at']
-    
-    def __str__(self):
-        return f"{self.listing.title} - View at {self.viewed_at}"
+        return f"{self.attribute.name}: {self.value}"
 
 class InventoryLog(models.Model):
-    INVENTORY_CHANGE_TYPES = [
+    CHANGE_TYPE_CHOICES = [
         ('restock', _('Restock')),
         ('sale', _('Sale')),
         ('adjustment', _('Adjustment')),
         ('return', _('Return')),
         ('relist', _('Relist')),
-        ('auction_conversion', _('Auction Conversion')),
     ]
     
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='inventory_logs')
-    change_type = models.CharField(max_length=30, choices=INVENTORY_CHANGE_TYPES)
+    change_type = models.CharField(max_length=20, choices=CHANGE_TYPE_CHOICES)
     quantity_before = models.IntegerField()
     quantity_after = models.IntegerField()
     notes = models.TextField(blank=True)
@@ -211,6 +211,97 @@ class InventoryLog(models.Model):
         verbose_name = _('Inventory Log')
         verbose_name_plural = _('Inventory Logs')
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['listing', '-created_at']),
+        ]
     
     def __str__(self):
-        return f"{self.listing.title} - {self.change_type}: {self.quantity_before} → {self.quantity_after}"
+        return f"{self.change_type} for {self.listing.title}: {self.quantity_before} -> {self.quantity_after}"
+
+class Wishlist(models.Model):
+    """Wishlist acting as add-to-cart system"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wishlist_items')
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='wishlist_items')
+    quantity = models.IntegerField(default=1)
+    added_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'wishlist'
+        verbose_name = _('Wishlist Item')
+        verbose_name_plural = _('Wishlist Items')
+        unique_together = ['user', 'listing']
+        ordering = ['-added_at']
+        indexes = [
+            models.Index(fields=['user', '-added_at']),
+            models.Index(fields=['listing']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.listing.title} (Qty: {self.quantity})"
+    
+    @property
+    def total_price(self):
+        return self.listing.buy_now_price * self.quantity
+    
+    def update_quantity(self, new_quantity):
+        """Update quantity in wishlist"""
+        if new_quantity < 1:
+            self.delete()
+        elif new_quantity <= self.listing.available_stock:
+            self.quantity = new_quantity
+            self.save()
+        else:
+            raise ValueError(f"Cannot add more than {self.listing.available_stock} items")
+
+class Conversation(models.Model):
+    """Conversation between buyer and seller about a listing"""
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='conversations')
+    buyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='buyer_conversations')
+    seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name='seller_conversations')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'conversations'
+        verbose_name = _('Conversation')
+        verbose_name_plural = _('Conversations')
+        unique_together = ['listing', 'buyer', 'seller']
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['listing', '-updated_at']),
+            models.Index(fields=['buyer', '-updated_at']),
+            models.Index(fields=['seller', '-updated_at']),
+        ]
+    
+    def __str__(self):
+        return f"Conversation about {self.listing.title} between {self.buyer.email} and {self.seller.email}"
+    
+    @property
+    def last_message(self):
+        return self.messages.first()
+    
+    @property
+    def unread_count(self, user):
+        return self.messages.filter(is_read=False, sender__ne=user).count()
+
+class Message(models.Model):
+    """Message in a conversation"""
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'messages'
+        verbose_name = _('Message')
+        verbose_name_plural = _('Messages')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['conversation', '-created_at']),
+            models.Index(fields=['sender', '-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Message from {self.sender.email} in {self.conversation}"

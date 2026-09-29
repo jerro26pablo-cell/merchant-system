@@ -6,7 +6,7 @@ from django.core.paginator import Paginator
 from django.db.models.functions import Coalesce
 from decimal import Decimal, InvalidOperation
 from django.http import JsonResponse
-from .models import Listing, ListingImage, ListingAttribute, InventoryLog
+from .models import Listing, ListingImage, ListingAttribute, InventoryLog, Wishlist, Conversation, Message
 from .forms import ListingForm, ListingImageFormSet
 import logging
 
@@ -598,9 +598,292 @@ def adjust_quantity(request):
             'message': f'Stock updated to {new_stock}'
         })
         
+    except Listing.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Listing not found.'}, status=404)
+    except ValueError:
+        return JsonResponse({'success': False, 'message': 'Invalid quantity value.'}, status=400)
     except Exception as e:
         logger.error(f"Error in adjust_quantity: {e}", exc_info=True)
         return JsonResponse({'success': False, 'message': 'An error occurred while adjusting quantity.'}, status=500)
+
+@login_required
+def add_to_wishlist(request, slug):
+    """Add listing to wishlist (acts as add-to-cart)"""
+    try:
+        listing = get_object_or_404(Listing, slug=slug)
+        
+        # Prevent seller from adding their own items
+        if request.user == listing.seller:
+            messages.error(request, 'You cannot add your own listing to wishlist.')
+            return redirect('listing_detail', slug=slug)
+        
+        # Only buy-now items can be added to wishlist
+        if not listing.is_buy_now:
+            messages.error(request, 'Only buy-now items can be added to wishlist.')
+            return redirect('listing_detail', slug=slug)
+        
+        if listing.available_stock <= 0:
+            messages.error(request, 'This item is out of stock.')
+            return redirect('listing_detail', slug=slug)
+        
+        # Get quantity from POST or default to 1 for GET requests
+        if request.method == 'POST':
+            quantity = int(request.POST.get('quantity', 1))
+        else:
+            quantity = 1
+        
+        if quantity < 1:
+            messages.error(request, 'Quantity must be at least 1.')
+            return redirect('listing_detail', slug=slug)
+        
+        if quantity > listing.available_stock:
+            messages.error(request, f'Only {listing.available_stock} items available.')
+            return redirect('listing_detail', slug=slug)
+        
+        # Add or update wishlist item
+        wishlist_item, created = Wishlist.objects.get_or_create(
+            user=request.user,
+            listing=listing,
+            defaults={'quantity': quantity}
+        )
+        
+        if not created:
+            # Update quantity if already in wishlist
+            new_total = wishlist_item.quantity + quantity
+            if new_total > listing.available_stock:
+                messages.error(request, f'Cannot add more than {listing.available_stock} items total.')
+                return redirect('listing_detail', slug=slug)
+            wishlist_item.quantity = new_total
+            wishlist_item.save()
+        
+        logger.info(f"User {request.user.id} added {listing.slug} to wishlist (qty: {quantity})")
+        messages.success(request, f'Added to wishlist! Total: {wishlist_item.quantity} items')
+        return redirect('wishlist')
+        
+    except Exception as e:
+        logger.error(f"Error in add_to_wishlist: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while adding to wishlist.')
+        return redirect('listing_detail', slug=slug)
+
+@login_required
+def wishlist(request):
+    """View wishlist (acts as shopping cart)"""
+    try:
+        wishlist_items = Wishlist.objects.filter(user=request.user).select_related('listing', 'listing__seller', 'listing__category')
+        
+        total_amount = sum(item.total_price for item in wishlist_items)
+        total_items = sum(item.quantity for item in wishlist_items)
+        
+        context = {
+            'wishlist_items': wishlist_items,
+            'total_amount': total_amount,
+            'total_items': total_items,
+        }
+        
+        return render(request, 'listings/wishlist.html', context)
+    except Exception as e:
+        logger.error(f"Error in wishlist: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while loading your wishlist.')
+        return redirect('catalog')
+
+@login_required
+def update_wishlist_quantity(request, item_id):
+    """Update quantity of wishlist item via AJAX"""
+    try:
+        wishlist_item = get_object_or_404(Wishlist, id=item_id, user=request.user)
+        new_quantity = int(request.POST.get('quantity', 1))
+        
+        if new_quantity < 1:
+            wishlist_item.delete()
+            return JsonResponse({'success': True, 'deleted': True})
+        
+        if new_quantity > wishlist_item.listing.available_stock:
+            return JsonResponse({
+                'success': False,
+                'message': f'Cannot add more than {wishlist_item.listing.available_stock} items'
+            }, status=400)
+        
+        wishlist_item.update_quantity(new_quantity)
+        
+        return JsonResponse({
+            'success': True,
+            'new_quantity': wishlist_item.quantity,
+            'new_total': wishlist_item.total_price
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in update_wishlist_quantity: {e}", exc_info=True)
+        return JsonResponse({'success': False, 'message': 'An error occurred.'}, status=500)
+
+@login_required
+def remove_from_wishlist(request, item_id):
+    """Remove item from wishlist"""
+    try:
+        wishlist_item = get_object_or_404(Wishlist, id=item_id, user=request.user)
+        wishlist_item.delete()
+        messages.success(request, 'Item removed from wishlist.')
+        return redirect('wishlist')
+    except Exception as e:
+        logger.error(f"Error in remove_from_wishlist: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while removing item.')
+        return redirect('wishlist')
+
+@login_required
+def checkout_wishlist(request):
+    """Checkout all items in wishlist"""
+    try:
+        wishlist_items = Wishlist.objects.filter(user=request.user)
+        
+        if not wishlist_items.exists():
+            messages.error(request, 'Your wishlist is empty.')
+            return redirect('wishlist')
+        
+        # Create orders for each item
+        from orders.models import Order
+        orders_created = []
+        
+        for wishlist_item in wishlist_items:
+            listing = wishlist_item.listing
+            
+            # Check stock again
+            if listing.available_stock < wishlist_item.quantity:
+                messages.error(request, f'{listing.title} no longer has enough stock.')
+                continue
+            
+            # Create order
+            order = Order.objects.create(
+                buyer=request.user,
+                listing=listing,
+                order_type='buy_now',
+                quantity=wishlist_item.quantity,
+                total_amount=wishlist_item.total_price,
+                shipping_address=request.user.profile.address if hasattr(request.user, 'profile') else '',
+                status='pending'
+            )
+            
+            # Reduce stock
+            listing.available_stock -= wishlist_item.quantity
+            listing.quantity_sold += wishlist_item.quantity
+            listing.save()
+            
+            # Log inventory change
+            InventoryLog.objects.create(
+                listing=listing,
+                change_type='sale',
+                quantity_before=listing.available_stock + wishlist_item.quantity,
+                quantity_after=listing.available_stock,
+                notes=f'Wishlist checkout order {order.order_number}: {wishlist_item.quantity} items'
+            )
+            
+            orders_created.append(order)
+            wishlist_item.delete()
+        
+        if orders_created:
+            messages.success(request, f'Successfully created {len(orders_created)} order(s)!')
+            return redirect('order_list')
+        else:
+            messages.error(request, 'No orders were created. Please check stock availability.')
+            return redirect('wishlist')
+            
+    except Exception as e:
+        logger.error(f"Error in checkout_wishlist: {e}", exc_info=True)
+        messages.error(request, 'An error occurred during checkout.')
+        return redirect('wishlist')
+
+@login_required
+def conversation_list(request):
+    """View all conversations for the current user"""
+    try:
+        # Get conversations where user is either buyer or seller
+        conversations = Conversation.objects.filter(
+            Q(buyer=request.user) | Q(seller=request.user)
+        ).select_related('listing', 'buyer', 'seller').prefetch_related('messages').order_by('-updated_at')
+        
+        context = {
+            'conversations': conversations,
+        }
+        
+        return render(request, 'listings/conversations.html', context)
+    except Exception as e:
+        logger.error(f"Error in conversation_list: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while loading conversations.')
+        return redirect('catalog')
+
+@login_required
+def conversation_detail(request, conversation_id):
+    """View and send messages in a conversation"""
+    try:
+        conversation = get_object_or_404(
+            Conversation,
+            id=conversation_id,
+            Q(buyer=request.user) | Q(seller=request.user)
+        )
+        
+        # Mark messages as read
+        if request.user == conversation.seller:
+            conversation.messages.filter(sender=conversation.buyer, is_read=False).update(is_read=True)
+        else:
+            conversation.messages.filter(sender=conversation.seller, is_read=False).update(is_read=True)
+        
+        if request.method == 'POST':
+            content = request.POST.get('content', '').strip()
+            if content:
+                Message.objects.create(
+                    conversation=conversation,
+                    sender=request.user,
+                    content=content
+                )
+                conversation.updated_at = timezone.now()
+                conversation.save()
+                messages.success(request, 'Message sent!')
+                return redirect('conversation_detail', conversation_id=conversation.id)
+            else:
+                messages.error(request, 'Message cannot be empty.')
+        
+        context = {
+            'conversation': conversation,
+            'messages': conversation.messages.all().order_by('created_at'),
+        }
+        
+        return render(request, 'listings/conversation_detail.html', context)
+    except Exception as e:
+        logger.error(f"Error in conversation_detail: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while loading the conversation.')
+        return redirect('conversation_list')
+
+@login_required
+def start_conversation(request, slug):
+    """Start a new conversation about a listing"""
+    try:
+        listing = get_object_or_404(Listing, slug=slug)
+        
+        # Prevent conversation with yourself
+        if request.user == listing.seller:
+            messages.error(request, 'You cannot start a conversation with yourself.')
+            return redirect('listing_detail', slug=slug)
+        
+        # Check if conversation already exists
+        conversation = Conversation.objects.filter(
+            listing=listing,
+            buyer=request.user,
+            seller=listing.seller
+        ).first()
+        
+        if not conversation:
+            conversation = Conversation.objects.create(
+                listing=listing,
+                buyer=request.user,
+                seller=listing.seller
+            )
+            messages.success(request, 'Conversation started!')
+        else:
+            messages.info(request, 'Conversation already exists.')
+        
+        return redirect('conversation_detail', conversation_id=conversation.id)
+    except Exception as e:
+        logger.error(f"Error in start_conversation: {e}", exc_info=True)
+        messages.error(request, 'An error occurred while starting the conversation.')
+        return redirect('listing_detail', slug=slug)
 
 def seed_categories_view(request):
     """Simple view to seed categories - accessible via URL for Render free tier"""

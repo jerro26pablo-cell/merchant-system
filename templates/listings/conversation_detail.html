@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Conversation - {{ conversation.listing.title }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <a href="{% url 'conversation_list' %}" class="btn btn-outline-secondary mb-2">
+            <i class="bi bi-arrow-left"></i> Back to Conversations
+        </a>
+        <h1 class="mb-2">{{ conversation.listing.title }}</h1>
+        <p class="text-muted">
+            {% if request.user == conversation.seller %}
+                Conversation with buyer: {{ conversation.buyer.email }}
+            {% else %}
+                Conversation with seller: {{ conversation.seller.email }}
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                {% if conversation.listing.primary_image %}
+                    <img src="{{ conversation.listing.primary_image.image.url }}" class="img-fluid mb-2" alt="{{ conversation.listing.title }}" onerror="this.src='https://via.placeholder.com/200x200?text=N/A';">
+                {% else %}
+                    <img src="https://via.placeholder.com/200x200?text=No+Image" class="img-fluid mb-2" alt="{{ conversation.listing.title }}">
+                {% endif %}
+                <h5 class="card-title">{{ conversation.listing.title }}</h5>
+                <p class="card-text">Price: ₱{{ conversation.listing.buy_now_price }}</p>
+                <a href="{% url 'listing_detail' conversation.listing.slug %}" class="btn btn-outline-primary btn-sm w-100">View Listing</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body">
+                <div class="messages-container" style="max-height: 500px; overflow-y: auto; margin-bottom: 20px;">
+                    {% for message in messages %}
+                        <div class="message mb-3 {% if message.sender == request.user %}text-end{% else %}text-start{% endif %}">
+                            <div class="d-inline-block {% if message.sender == request.user %}bg-primary text-white{% else %}bg-light{% endif %} rounded p-3" style="max-width: 70%;">
+                                <p class="mb-1">{{ message.content }}</p>
+                                <small class="{% if message.sender == request.user %}text-white-50{% else %}text-muted{% endif %}">
+                                    {{ message.created_at|date:"M d, H:i" }}
+                                    {% if message.sender != request.user and not message.is_read %}
+                                        <span class="badge bg-secondary">New</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-center text-muted py-5">
+                            <p>No messages yet. Start the conversation!</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="content" placeholder="Type your message..." required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Send
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-scroll to bottom of messages
+document.addEventListener('DOMContentLoaded', function() {
+    const messagesContainer = document.querySelector('.messages-container');
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+});
+</script>
+{% endblock %}

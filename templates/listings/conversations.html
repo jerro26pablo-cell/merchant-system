@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}My Conversations - Welcome Online Merchant{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="mb-2">My Conversations</h1>
+        <p class="text-muted">Messages with sellers and buyers</p>
+    </div>
+</div>
+
+{% if conversations %}
+<div class="row">
+    {% for conversation in conversations %}
+        <div class="col-12 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            {% if conversation.listing.primary_image %}
+                                <img src="{{ conversation.listing.primary_image.image.url }}" class="img-fluid" alt="{{ conversation.listing.title }}" style="max-height: 80px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/80x80?text=N/A';">
+                            {% else %}
+                                <img src="https://via.placeholder.com/80x80?text=No+Image" class="img-fluid" alt="{{ conversation.listing.title }}" style="max-height: 80px; object-fit: cover;">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="mb-1">
+                                <a href="{% url 'conversation_detail' conversation.id %}">{{ conversation.listing.title }}</a>
+                            </h5>
+                            <p class="text-muted mb-0">
+                                {% if request.user == conversation.seller %}
+                                    Buyer: {{ conversation.buyer.email }}
+                                {% else %}
+                                    Seller: {{ conversation.seller.email }}
+                                {% endif %}
+                            </p>
+                            <p class="text-muted mb-0 small">
+                                {% if conversation.last_message %}
+                                    Last message: {{ conversation.last_message.content|truncatechars:50 }}
+                                {% else %}
+                                    No messages yet
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <a href="{% url 'conversation_detail' conversation.id %}" class="btn btn-primary">
+                                <i class="bi bi-chat"></i> View Conversation
+                            </a>
+                            {% if conversation.unread_count:request.user > 0 %}
+                                <span class="badge bg-danger">{{ conversation.unread_count:request.user }} unread</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info text-center">
+            <h4><i class="bi bi-chat-square-text"></i> No conversations yet</h4>
+            <p>Start a conversation with a seller or buyer by viewing a listing.</p>
+            <a href="{% url 'catalog' %}" class="btn btn-primary">
+                <i class="bi bi-search"></i> Browse Listings
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

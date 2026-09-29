@@ -199,8 +199,8 @@
                                             </a>
                                         {% endif %}
                                         {% if listing.is_buy_now and request.user != listing.seller %}
-                                            <a href="{% url 'listing_detail' listing.slug %}#buy-now" class="btn btn-outline-success">
-                                                <i class="bi bi-cart"></i> Buy
+                                            <a href="{% url 'add_to_wishlist' listing.slug %}" class="btn btn-outline-success">
+                                                <i class="bi bi-heart"></i> Add
                                             </a>
                                         {% endif %}
                                     </div>

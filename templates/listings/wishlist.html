@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}My Wishlist - Welcome Online Merchant{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="mb-2">My Wishlist</h1>
+        <p class="text-muted">Your shopping cart</p>
+    </div>
+</div>
+
+{% if wishlist_items %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <h5 class="mb-0">Total Items: {{ total_items }}</h5>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h5 class="mb-0">Total: ₱{{ total_amount }}</h5>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <form method="POST" action="{% url 'checkout_wishlist' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-cart"></i> Checkout All
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% for item in wishlist_items %}
+        <div class="col-12 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-2">
+                            {% if item.listing.primary_image %}
+                                <img src="{{ item.listing.primary_image.image.url }}" class="img-fluid" alt="{{ item.listing.title }}" style="max-height: 100px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/100x100?text=N/A';">
+                            {% else %}
+                                <img src="https://via.placeholder.com/100x100?text=No+Image" class="img-fluid" alt="{{ item.listing.title }}" style="max-height: 100px; object-fit: cover;">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <h5 class="mb-1">
+                                <a href="{% url 'listing_detail' item.listing.slug %}">{{ item.listing.title }}</a>
+                            </h5>
+                            <p class="text-muted mb-0">{{ item.listing.category.name }}</p>
+                            <p class="mb-0">Price: ₱{{ item.listing.buy_now_price }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Quantity</label>
+                            <div class="input-group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="updateQuantity({{ item.id }}, -1)">-</button>
+                                <input type="number" class="form-control text-center" id="qty-{{ item.id }}" value="{{ item.quantity }}" min="1" max="{{ item.listing.available_stock }}" readonly>
+                                <button type="button" class="btn btn-outline-secondary" onclick="updateQuantity({{ item.id }}, 1)">+</button>
+                            </div>
+                            <small class="text-muted">Available: {{ item.listing.available_stock }}</small>
+                        </div>
+                        <div class="col-md-2">
+                            <h5 class="mb-0">₱{{ item.total_price }}</h5>
+                        </div>
+                        <div class="col-md-1 text-end">
+                            <a href="{% url 'remove_from_wishlist' item.id %}" class="btn btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info text-center">
+            <h4><i class="bi bi-cart-x"></i> Your wishlist is empty</h4>
+            <p>Browse our catalog to add items to your wishlist.</p>
+            <a href="{% url 'catalog' %}" class="btn btn-primary">
+                <i class="bi bi-search"></i> Browse Catalog
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function updateQuantity(itemId, change) {
+    const qtyInput = document.getElementById(`qty-${itemId}`);
+    const currentQty = parseInt(qtyInput.value);
+    const newQty = currentQty + change;
+
+    if (newQty < 1) {
+        if (confirm('Remove this item from wishlist?')) {
+            window.location.href = `/listings/wishlist/remove/${itemId}/`;
+        }
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('quantity', newQty);
+
+    fetch(`/listings/wishlist/update/${itemId}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.deleted) {
+                window.location.reload();
+            } else {
+                qtyInput.value = data.new_quantity;
+                // Update total price display if needed
+                location.reload();
+            }
+        } else {
+            alert(data.message || 'Error updating quantity');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating quantity');
+    });
+}
+</script>
+{% endblock %}

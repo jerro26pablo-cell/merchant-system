@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'channels',
     'storages',
+    'cloudinary_storage',
     'accounts',
     'categories',
     'listings',
@@ -118,31 +119,25 @@ else:
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Use S3 for media storage in production (recommended for persistence)
-# For Render free tier, local storage will be used but won't persist across deployments
-# For production with Render, set up AWS S3 or similar service
-USE_S3 = config('USE_S3', default=False, cast=bool)
+# Use Cloudinary for media storage in production (free tier available)
+# For Render free tier, Cloudinary is recommended as it's free and persistent
+USE_CLOUDINARY = config('USE_CLOUDINARY', default=False, cast=bool)
 
-if USE_S3:
-    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-    AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
-    AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')
-    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
-    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
-    AWS_DEFAULT_ACL = 'public-read'
-    AWS_S3_FILE_OVERWRITE = False
-    
-    # S3 Static settings
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
-    
-    # S3 Media settings
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+if USE_CLOUDINARY:
+    import cloudinary
+    import cloudinary.uploader
+    import cloudinary.api
+
+    CLOUDINARY_URL = config('CLOUDINARY_URL')
+    cloudinary.config(cloud_name=config('CLOUDINARY_CLOUD_NAME'),
+                     api_key=config('CLOUDINARY_API_KEY'),
+                     api_secret=config('CLOUDINARY_API_SECRET'))
+
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    MEDIA_URL = ''
     MEDIA_ROOT = ''
 elif 'RENDER' in os.environ:
-    # Render with persistent disk - use local storage that persists
+    # Render free tier fallback - local storage (ephemeral, won't persist)
     MEDIA_ROOT = Path('/opt/render/project/src/media')
     MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
 
