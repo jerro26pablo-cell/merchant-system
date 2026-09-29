@@ -143,44 +143,63 @@ def listing_detail(request, slug):
 @login_required
 def create_listing(request):
     try:
+        logger.info(f"Create listing request - Method: {request.method}, User: {request.user}, Is seller: {request.user.is_seller}")
+        
         if not request.user.is_seller:
             messages.error(request, 'You need to enable seller mode to create listings.')
             return redirect('enable_seller_mode')
         
         if request.method == 'POST':
+            logger.info(f"POST data: {request.POST}")
+            logger.info(f"FILES data: {request.FILES}")
+            
             form = ListingForm(request.POST, request.FILES)
             image_formset = ListingImageFormSet(request.POST, request.FILES)
             save_as_draft = request.POST.get('save_as_draft') == 'true'
             
-            if form.is_valid():
-                listing = form.save(commit=False)
-                listing.seller = request.user
-                if save_as_draft:
-                    listing.status = 'draft'
-                else:
-                    listing.status = 'active'
-                listing.save()
-                
-                # Handle images
-                image_formset = ListingImageFormSet(request.POST, request.FILES, instance=listing)
-                if image_formset.is_valid():
-                    image_formset.save()
-                
-                # Log inventory
-                InventoryLog.objects.create(
-                    listing=listing,
-                    change_type='restock',
-                    quantity_before=0,
-                    quantity_after=listing.quantity,
-                    notes='Initial listing creation'
-                )
-                
-                if save_as_draft:
-                    messages.success(request, 'Draft listing created successfully!')
-                    return redirect('inventory_management')
-                else:
-                    messages.success(request, 'Listing created successfully!')
-                    return redirect('listing_detail', slug=listing.slug)
+            logger.info(f"Form valid: {form.is_valid()}, save_as_draft: {save_as_draft}")
+            
+            if not form.is_valid():
+                logger.error(f"Form errors: {form.errors}")
+                messages.error(request, 'Please correct the errors below.')
+                return render(request, 'listings/create.html', {'form': form, 'image_formset': image_formset})
+            
+            listing = form.save(commit=False)
+            listing.seller = request.user
+            if save_as_draft:
+                listing.status = 'draft'
+            else:
+                listing.status = 'active'
+            listing.save()
+            
+            logger.info(f"Listing created: {listing.id}, status: {listing.status}, quantity: {listing.quantity}")
+            
+            # Handle images
+            image_formset = ListingImageFormSet(request.POST, request.FILES, instance=listing)
+            if image_formset.is_valid():
+                image_formset.save()
+                logger.info(f"Images saved for listing {listing.id}")
+            else:
+                logger.error(f"Image formset errors: {image_formset.errors}")
+                messages.error(request, 'There were errors with the images. Please check and try again.')
+            
+            # Log inventory
+            InventoryLog.objects.create(
+                listing=listing,
+                change_type='restock',
+                quantity_before=0,
+                quantity_after=listing.quantity,
+                notes='Initial listing creation'
+            )
+            
+            logger.info(f"Inventory log created for listing {listing.id}")
+            
+            if save_as_draft:
+                messages.success(request, 'Draft listing created successfully!')
+                return redirect('inventory_management')
+            else:
+                messages.success(request, 'Listing created successfully!')
+                return redirect('listing_detail', slug=listing.slug)
         else:
             form = ListingForm()
             image_formset = ListingImageFormSet()
