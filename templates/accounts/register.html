@@ -217,17 +217,29 @@
                 <div class="form-floating">
                     <input type="password" class="form-control" name="password1" id="id_password1" placeholder="Password" required>
                     <label for="id_password1">Password</label>
+                    <div class="form-text">Password must be at least 8 characters long</div>
                     {% if form.password1.errors %}
                         <div class="text-danger small">{{ form.password1.errors.0 }}</div>
                     {% endif %}
                 </div>
                 
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="showPassword1">
+                    <label class="form-check-label" for="showPassword1">Show Password</label>
+                </div>
+                
                 <div class="form-floating">
                     <input type="password" class="form-control" name="password2" id="id_password2" placeholder="Confirm Password" required>
                     <label for="id_password2">Confirm Password</label>
+                    <div class="form-text">Must match the password above</div>
                     {% if form.password2.errors %}
                         <div class="text-danger small">{{ form.password2.errors.0 }}</div>
                     {% endif %}
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="showPassword2">
+                    <label class="form-check-label" for="showPassword2">Show Confirm Password</label>
                 </div>
                 
                 <button type="submit" class="btn-register">Create Account</button>
@@ -302,10 +314,24 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('registrationForm').addEventListener('submit', function(e) {
         const province = provinceSelect.value;
         const municipality = municipalitySelect.value;
+        const password1 = document.getElementById('id_password1').value;
+        const password2 = document.getElementById('id_password2').value;
         
         if (!province || !municipality) {
             e.preventDefault();
             alert('Please select both province and municipality/city');
+            return false;
+        }
+        
+        if (password1 && password1.length < 8) {
+            e.preventDefault();
+            alert('Password must be at least 8 characters long');
+            return false;
+        }
+        
+        if (password1 !== password2) {
+            e.preventDefault();
+            alert('Passwords do not match');
             return false;
         }
     });
@@ -320,6 +346,20 @@ document.addEventListener('DOMContentLoaded', function() {
             municipalitySelect.value = '{{ form.municipality.value }}';
         }, 350);
     {% endif %}
+
+    // Show/Hide password functionality
+    const showPassword1 = document.getElementById('showPassword1');
+    const showPassword2 = document.getElementById('showPassword2');
+    const password1Input = document.getElementById('id_password1');
+    const password2Input = document.getElementById('id_password2');
+
+    showPassword1.addEventListener('change', function() {
+        password1Input.type = this.checked ? 'text' : 'password';
+    });
+
+    showPassword2.addEventListener('change', function() {
+        password2Input.type = this.checked ? 'text' : 'password';
+    });
 });
 </script>
 {% endblock %}

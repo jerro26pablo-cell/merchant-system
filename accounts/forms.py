@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth import authenticate
+from django.core.exceptions import ValidationError
 from .models import User, SellerProfile, BuyerProfile
 
 class UserRegistrationForm(UserCreationForm):
@@ -13,6 +14,12 @@ class UserRegistrationForm(UserCreationForm):
     class Meta:
         model = User
         fields = ['username', 'email', 'first_name', 'last_name', 'province', 'municipality', 'password1', 'password2']
+    
+    def clean_password1(self):
+        password1 = self.cleaned_data.get('password1')
+        if password1 and len(password1) < 8:
+            raise ValidationError("Password must be at least 8 characters long")
+        return password1
     
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -29,6 +36,12 @@ class UserRegistrationForm(UserCreationForm):
 class UserLoginForm(forms.Form):
     email = forms.EmailField()
     password = forms.CharField(widget=forms.PasswordInput)
+    
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if password and len(password) < 8:
+            raise ValidationError("Password must be at least 8 characters long")
+        return password
     
     def clean(self):
         email = self.cleaned_data.get('email')
