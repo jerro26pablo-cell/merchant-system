@@ -241,83 +241,96 @@
 </div>
 
 <script>
-// Philippine Provinces and Municipalities Data
-const philippineData = {
-    "South Cotabato": ["Polomolok", "General Santos City", "Koronadal City", "Tupi", "Tantangan", "Surallah", "Santo Niño", "San Pablo", "Norala", "Lake Sebu", "T'boli", "Tampakan", "Banga", "Basilan"],
-    "Metro Manila": ["Manila", "Quezon City", "Caloocan", "Las Piñas", "Makati", "Malabon", "Mandaluyong", "Marikina", "Muntinlupa", "Navotas", "Parañaque", "Pasay", "Pasig", "Pateros", "San Juan", "Taguig", "Valenzuela"],
-    "Cebu": ["Cebu City", "Mandaue City", "Lapu-Lapu City", "Talisay City", "Toledo City", "Naga City", "Carcar City", "Danao City", "Bogo City", "Argao", "Badian", "Balamban", "Barili", "Boljoon", "Borbon", "Carmen", "Catmon", "Compostela", "Consolacion", "Cordova", "Daanbantayan", "Dalaguete", "Dumanjug", "Ginatilan", "Liloan", "Madridejos", "Malabuyoc", "Medellin", "Minglanilla", "Moalboal", "Naga", "Oslob", "Pilar", "Pinamungahan", "Poro", "Ronda", "Samboan", "San Fernando", "San Francisco", "San Remigio", "Santa Fe", "Santander", "Sibonga", "Sogod", "Tabogon", "Tabuelan", "Tuburan", "Tudela"],
-    "Davao del Sur": ["Davao City", "Digos City", "Davao City", "Bansalan", "Hagonoy", "Kiblawan", "Magsaysay", "Matanao", "Padada", "Santa Cruz", "Sulop"],
-    "Ilocos Norte": ["Laoag City", "Batac City", "Badoc", "Bangui", "Banna", "Burgos", "Carasi", "Currimao", "Dingras", "Dumalneg", "Marcos", "Nueva Era", "Pagudpud", "Paoay", "Pasuquin", "Piddig", "Pinili", "San Nicolas", "Sarrat", "Solsona", "Vintar"],
-    "Pampanga": ["Angeles City", "San Fernando City", "Mabalacat City", "City of San Fernando", "Apalit", "Arayat", "Bacolor", "Candaba", "Floridablanca", "Guagua", "Lubao", "Masantol", "Mexico", "Minalin", "Porac", "San Luis", "San Simon", "Santa Ana", "Santa Rita", "Santo Tomas", "Sexmoan"],
-    "Cavite": ["Tagaytay City", "Trece Martires City", "Bacoor City", "Cavite City", "Dasmariñas City", "General Trias City", "Imus City", "Silang City", "Alfonso", "Amadeo", "Carmona", "General Emilio Aguinaldo", "Indang", "Kawit", "Magallanes", "Maragondon", "Mendez", "Noveleta", "Rosario", "Tanza", "Ternate"],
-    "Laguna": ["Santa Rosa City", "Biñan City", "Cabuyao City", "Calamba City", "San Pablo City", "San Pedro City", "Alaminos", "Bay", "Calauan", "Cavinti", "Famy", "Kalayaan", "Liliw", "Los Baños", "Luisiana", "Lumban", "Mabitac", "Magdalena", "Majayjay", "Nagcarlan", "Paete", "Pagsanjan", "Pakil", "Pangil", "Pila", "Rizal", "Santa Cruz", "Santa Maria", "Siniloan", "Victoria"],
-    "Bulacan": ["Malolos City", "Meycauayan City", "San Jose del Monte City", "Balagtas", "Baliuag", "Bocaue", "Bulakan", "Bustos", "Calumpit", "Doña Remedios Trinidad", "Guiguinto", "Hagonoy", "Marilao", "Norzagaray", "Obando", "Pandi", "Paombong", "Plaridel", "Pulilan", "San Ildefonso", "San Miguel", "San Rafael", "Santa Maria"],
-    "Negros Occidental": ["Bacolod City", "Bago City", "Cadiz City", "Escalante City", "Himamaylan City", "Kabankalan City", "La Carlota City", "Sagay City", "San Carlos City", "Silay City", "Sipalay City", "Talisay City", "Victorias City", "Binalbagan", "Calatrava", "Candoni", "Cauayan", "Enrique B. Magalona", "Hinigaran", "Hinoba-an", "Ilog", "Isabela", "La Castellana", "Manapla", "Moises Padilla", "Murcia", "Pontevedra", "Pulupandan", "Salvador Benedicto", "San Enrique", "Toboso", "Valladolid"],
-    "Iloilo": ["Iloilo City", "Passi City", "Ajuy", "Alimodian", "Anilao", "Badiangan", "Balasan", "Banate", "Barotac Nuevo", "Barotac Viejo", "Batad", "Bingawan", "Cabatuan", "Calinog", "Carles", "Concepcion", "Dingle", "Dueñas", "Dumangas", "Estancia", "Guimbal", "Igbaras", "Janiuay", "Lambunao", "Leganes", "Leon", "Maasin", "Miagao", "Mina", "New Lucena", "Oton", "Pavia", "Pototan", "San Dionisio", "San Enrique", "San Joaquin", "San Miguel", "San Rafael", "Santa Barbara", "Sara", "Tigbauan", "Tubungan", "Zarraga"],
-    "Zambales": ["Olongapo City", "Subic", "Botolan", "Cabangan", "Candelaria", "Castillejos", "Iba", "Masinloc", "Palauig", "San Antonio", "San Felipe", "San Marcelino", "San Narciso", "Santa Cruz"],
-    "Pangasinan": ["Alaminos City", "Urdaneta City", "Dagupan City", "San Carlos City", "Agno", "Agno", "Aguilar", "Alcala", "Anda", "Asingan", "Balungao", "Bani", "Basista", "Bautista", "Bayambang", "Binalonan", "Binmaley", "Bolinao", "Bugallon", "Burgos", "Calasiao", "Dasol", "Infanta", "Labrador", "Laoac", "Lingayen", "Mabini", "Malasiqui", "Manaoag", "Mapandan", "Natividad", "Pozorrubio", "Rosales", "San Fabian", "San Jacinto", "San Manuel", "San Nicolas", "San Quintin", "Santa Barbara", "Santa Maria", "Santo Tomas", "Sison", "Sual", "Tayug", "Umingan", "Urbiztondo", "Villasis", "Villasis"],
-    "Bataan": ["Balanga City", "Abucay", "Bagac", "Dinalupihan", "Hermosa", "Limay", "Mariveles", "Morong", "Orani", "Orion", "Pilar", "Samal"],
-    "Rizal": ["Antipolo City", "Angono", "Baras", "Binangonan", "Cainta", "Cardona", "Jala-Jala", "Morong", "Pililla", "Rodriguez", "San Mateo", "Tanay", "Taytay", "Teresa"],
-    "Quezon": ["Lucena City", "Tayabas City", "Agdangan", "Alabat", "Atimonan", "Buenavista", "Burdeos", "Calauag", "Candelaria", "Catanauan", "Dolores", "General Luna", "General Nakar", "Gumaca", "Infanta", "Jomalig", "Lopez", "Lucban", "Macalelon", "Mauban", "Mulanay", "Padre Burgos", "Pagsanjan", "Pakil", "Pangil", "Patnanungan", "Perez", "Pitogo", "Plaridel", "Polillo", "Quezon", "Real", "Sampaloc", "San Andres", "San Antonio", "San Francisco", "San Narciso", "Tagkawayan", "Tiaong", "Unisan"],
-    "Batangas": ["Batangas City", "Lipa City", "Tanauan City", "Agoncillo", "Alitagtag", "Balayan", "Balete", "Bauan", "Calaca", "Calatagan", "Cuenca", "Ibaan", "Laurel", "Lemery", "Lian", "Lobo", "Mabini", "Mataasnakahoy", "Nasugbu", "Padre Garcia", "Rosario", "San Jose", "San Juan", "San Luis", "San Nicolas", "San Pascual", "Santa Teresita", "Santo Tomas", "Taal", "Talisay", "Taysan", "Tingloy", "Tuy"],
-    "Camarines Sur": ["Naga City", "Iriga City", "Gainza", "Baao", "Balatan", "Bato", "Bombon", "Buhi", "Bula", "Cabusao", "Calabanga", "Camaligan", "Canaman", "Caramoan", "Del Gallego", "Garchitorena", "Goa", "Libmanan", "Lupi", "Magarao", "Milaor", "Minalabac", "Nabua", "Pamplona", "Pasacao", "Pili", "Presentacion", "Ragay", "San Fernando", "San Jose", "Sipocot", "Siruma", "Tigaon", "Tinambac"],
-    "Misamis Oriental": ["Cagayan de Oro City", "Gingoog City", "El Salvador City", "Alubijid", "Balingasag", "Balingoan", "Binuangan", "Claveria", "Gitagum", "Initao", "Jasaan", "Kinoguitan", "Lagonglong", "Lanao", "Libertad", "Lugait", "Magsaysay", "Manticao", "Medina", "Naawan", "Opol", "Salay", "Sugbongcogon", "Tagoloan", "Talisayan", "Villanueva"],
-    "Bukidnon": ["Valencia City", "Malaybalay City", "Cabanglasan", "Damulog", "Dangcagan", "Don Carlos", "Impasugong", "Kadingilan", "Kalilangan", "Kibawe", "Kitaotao", "Lantapan", "Libona", "Malitbog", "Manolo Fortich", "Maramag", "Pangantucan", "Pantaron", "Poli", "Quezon", "San Fernando", "Sumilao", "Talakag", "Talumingan"],
-    "South Cotabato": ["Polomolok", "General Santos City", "Koronadal City", "Tupi", "Tantangan", "Surallah", "Santo Niño", "San Pablo", "Norala", "Lake Sebu", "T'boli", "Tampakan", "Banga", "Basilan"]
-};
+document.addEventListener('DOMContentLoaded', function() {
+    // Philippine Provinces and Municipalities Data
+    const philippineData = {
+        "South Cotabato": ["Polomolok", "General Santos City", "Koronadal City", "Tupi", "Tantangan", "Surallah", "Santo Niño", "San Pablo", "Norala", "Lake Sebu", "T'boli", "Tampakan", "Banga", "Basilan"],
+        "Metro Manila": ["Manila", "Quezon City", "Caloocan", "Las Piñas", "Makati", "Malabon", "Mandaluyong", "Marikina", "Muntinlupa", "Navotas", "Parañaque", "Pasay", "Pasig", "Pateros", "San Juan", "Taguig", "Valenzuela"],
+        "Cebu": ["Cebu City", "Mandaue City", "Lapu-Lapu City", "Talisay City", "Toledo City", "Naga City", "Carcar City", "Danao City", "Bogo City", "Argao", "Badian", "Balamban", "Barili", "Boljoon", "Borbon", "Carmen", "Catmon", "Compostela", "Consolacion", "Cordova", "Daanbantayan", "Dalaguete", "Dumanjug", "Ginatilan", "Liloan", "Madridejos", "Malabuyoc", "Medellin", "Minglanilla", "Moalboal", "Naga", "Oslob", "Pilar", "Pinamungahan", "Poro", "Ronda", "Samboan", "San Fernando", "San Francisco", "San Remigio", "Santa Fe", "Santander", "Sibonga", "Sogod", "Tabogon", "Tabuelan", "Tuburan", "Tudela"],
+        "Davao del Sur": ["Davao City", "Digos City", "Davao City", "Bansalan", "Hagonoy", "Kiblawan", "Magsaysay", "Matanao", "Padada", "Santa Cruz", "Sulop"],
+        "Ilocos Norte": ["Laoag City", "Batac City", "Badoc", "Bangui", "Banna", "Burgos", "Carasi", "Currimao", "Dingras", "Dumalneg", "Marcos", "Nueva Era", "Pagudpud", "Paoay", "Pasuquin", "Piddig", "Pinili", "San Nicolas", "Sarrat", "Solsona", "Vintar"],
+        "Pampanga": ["Angeles City", "San Fernando City", "Mabalacat City", "City of San Fernando", "Apalit", "Arayat", "Bacolor", "Candaba", "Floridablanca", "Guagua", "Lubao", "Masantol", "Mexico", "Minalin", "Porac", "San Luis", "San Simon", "Santa Ana", "Santa Rita", "Santo Tomas", "Sexmoan"],
+        "Cavite": ["Tagaytay City", "Trece Martires City", "Bacoor City", "Cavite City", "Dasmariñas City", "General Trias City", "Imus City", "Silang City", "Alfonso", "Amadeo", "Carmona", "General Emilio Aguinaldo", "Indang", "Kawit", "Magallanes", "Maragondon", "Mendez", "Noveleta", "Rosario", "Tanza", "Ternate"],
+        "Laguna": ["Santa Rosa City", "Biñan City", "Cabuyao City", "Calamba City", "San Pablo City", "San Pedro City", "Alaminos", "Bay", "Calauan", "Cavinti", "Famy", "Kalayaan", "Liliw", "Los Baños", "Luisiana", "Lumban", "Mabitac", "Magdalena", "Majayjay", "Nagcarlan", "Paete", "Pagsanjan", "Pakil", "Pangil", "Pila", "Rizal", "Santa Cruz", "Santa Maria", "Siniloan", "Victoria"],
+        "Bulacan": ["Malolos City", "Meycauayan City", "San Jose del Monte City", "Balagtas", "Baliuag", "Bocaue", "Bulakan", "Bustos", "Calumpit", "Doña Remedios Trinidad", "Guiguinto", "Hagonoy", "Marilao", "Norzagaray", "Obando", "Pandi", "Paombong", "Plaridel", "Pulilan", "San Ildefonso", "San Miguel", "San Rafael", "Santa Maria"],
+        "Negros Occidental": ["Bacolod City", "Bago City", "Cadiz City", "Escalante City", "Himamaylan City", "Kabankalan City", "La Carlota City", "Sagay City", "San Carlos City", "Silay City", "Sipalay City", "Talisay City", "Victorias City", "Binalbagan", "Calatrava", "Candoni", "Cauayan", "Enrique B. Magalona", "Hinigaran", "Hinoba-an", "Ilog", "Isabela", "La Castellana", "Manapla", "Moises Padilla", "Murcia", "Pontevedra", "Pulupandan", "Salvador Benedicto", "San Enrique", "Toboso", "Valladolid"],
+        "Iloilo": ["Iloilo City", "Passi City", "Ajuy", "Alimodian", "Anilao", "Badiangan", "Balasan", "Banate", "Barotac Nuevo", "Barotac Viejo", "Batad", "Bingawan", "Cabatuan", "Calinog", "Carles", "Concepción", "Dingle", "Dueñas", "Dumangas", "Estancia", "Guimbal", "Igbaras", "Janiuay", "Lambunao", "Leganes", "Leon", "Maasin", "Miagao", "Mina", "New Lucena", "Oton", "Pavia", "Pototan", "San Dionisio", "San Enrique", "San Joaquin", "San Miguel", "San Rafael", "Santa Barbara", "Sara", "Tigbauan", "Tubungan", "Zarraga"],
+        "Zambales": ["Olongapo City", "Subic", "Botolan", "Cabangan", "Candelaria", "Castillejos", "Iba", "Masinloc", "Palauig", "San Antonio", "San Felipe", "San Marcelino", "San Narciso", "Santa Cruz"],
+        "Pangasinan": ["Alaminos City", "Urdaneta City", "Dagupan City", "San Carlos City", "Agno", "Agno", "Aguilar", "Alcala", "Anda", "Asingan", "Balungao", "Bani", "Basista", "Bautista", "Bayambang", "Binalonan", "Binmaley", "Bolinao", "Bugallon", "Burgos", "Calasiao", "Dasol", "Infanta", "Labrador", "Laoac", "Lingayen", "Mabini", "Malasiqui", "Manaoag", "Mapandan", "Natividad", "Pozorrubio", "Rosales", "San Fabian", "San Jacinto", "San Manuel", "San Nicolas", "San Quintin", "Santa Barbara", "Santa Maria", "Santo Tomas", "Sison", "Sual", "Tayug", "Umingan", "Urbiztondo", "Villasis", "Villasis"],
+        "Bataan": ["Balanga City", "Abucay", "Bagac", "Dinalupihan", "Hermosa", "Limay", "Mariveles", "Morong", "Orani", "Orion", "Pilar", "Samal"],
+        "Rizal": ["Antipolo City", "Angono", "Baras", "Binangonan", "Cainta", "Cardona", "Jala-Jala", "Morong", "Pililla", "Rodriguez", "San Mateo", "Tanay", "Taytay", "Teresa"],
+        "Quezon": ["Lucena City", "Tayabas City", "Agdangan", "Alabat", "Atimonan", "Buenavista", "Burdeos", "Calauag", "Candelaria", "Catanauan", "Dolores", "General Luna", "General Nakar", "Gumaca", "Infanta", "Jomalig", "Lopez", "Lucban", "Macalelon", "Mauban", "Mulanay", "Padre Burgos", "Pagsanjan", "Pakil", "Pangil", "Patnanungan", "Perez", "Pitogo", "Plaridel", "Polillo", "Quezon", "Real", "Sampaloc", "San Andres", "San Antonio", "San Francisco", "San Narciso", "Tagkawayan", "Tiaong", "Unisan"],
+        "Batangas": ["Batangas City", "Lipa City", "Tanauan City", "Agoncillo", "Alitagtag", "Balayan", "Balete", "Bauan", "Calaca", "Calatagan", "Cuenca", "Ibaan", "Laurel", "Lemery", "Lian", "Lobo", "Mabini", "Mataasnakahoy", "Nasugbu", "Padre Garcia", "Rosario", "San Jose", "San Juan", "San Luis", "San Nicolas", "San Pascual", "Santa Teresita", "Santo Tomas", "Taal", "Talisay", "Taysan", "Tingloy", "Tuy"],
+        "Camarines Sur": ["Naga City", "Iriga City", "Gainza", "Baao", "Balatan", "Bato", "Bombon", "Buhi", "Bula", "Cabusao", "Calabanga", "Camaligan", "Canaman", "Caramoan", "Del Gallego", "Garchitorena", "Goa", "Libmanan", "Lupi", "Magarao", "Milaor", "Minalabac", "Nabua", "Pamplona", "Pasacao", "Pili", "Presentacion", "Ragay", "San Fernando", "San Jose", "Sipocot", "Siruma", "Tigaon", "Tinambac"],
+        "Misamis Oriental": ["Cagayan de Oro City", "Gingoog City", "El Salvador City", "Alubijid", "Balingasag", "Balingoan", "Binuangan", "Claveria", "Gitagum", "Initao", "Jasaan", "Kinoguitan", "Lagonglong", "Lanao", "Libertad", "Lugait", "Magsaysay", "Manticao", "Medina", "Naawan", "Opol", "Salay", "Sugbongcogon", "Tagoloan", "Talisayan", "Villanueva"],
+        "Bukidnon": ["Valencia City", "Malaybalay City", "Cabanglasan", "Damulog", "Dangcagan", "Don Carlos", "Impasugong", "Kadingilan", "Kalilangan", "Kibawe", "Kitaotao", "Lantapan", "Libona", "Malitbog", "Manolo Fortich", "Maramag", "Pangantucan", "Pantaron", "Poli", "Quezon", "San Fernando", "Sumilao", "Talakag", "Talumingan"],
+        "South Cotabato": ["Polomolok", "General Santos City", "Koronadal City", "Tupi", "Tantangan", "Surallah", "Santo Niño", "San Pablo", "Norala", "Lake Sebu", "T'boli", "Tampakan", "Banga", "Basilan"]
+    };
 
-// Populate provinces dropdown
-const provinceSelect = document.getElementById('province');
-const municipalitySelect = document.getElementById('municipality');
-const municipalityLoading = document.getElementById('municipalityLoading');
+    // Populate provinces dropdown
+    const provinceSelect = document.getElementById('province');
+    const municipalitySelect = document.getElementById('municipality');
+    const municipalityLoading = document.getElementById('municipalityLoading');
 
-// Populate provinces
-Object.keys(philippineData).sort().forEach(province => {
-    const option = document.createElement('option');
-    option.value = province;
-    option.textContent = province;
-    provinceSelect.appendChild(option);
-});
+    // Populate provinces
+    Object.keys(philippineData).sort().forEach(province => {
+        const option = document.createElement('option');
+        option.value = province;
+        option.textContent = province;
+        provinceSelect.appendChild(option);
+    });
 
-// Handle province change
-provinceSelect.addEventListener('change', function() {
-    const selectedProvince = this.value;
-    
-    // Clear and disable municipality dropdown
-    municipalitySelect.innerHTML = '<option value="">Select Municipality/City</option>';
-    municipalitySelect.disabled = true;
-    
-    if (selectedProvince) {
-        // Show loading
-        municipalityLoading.classList.add('show');
+    // Handle province change
+    provinceSelect.addEventListener('change', function() {
+        const selectedProvince = this.value;
         
-        // Simulate loading delay for better UX
-        setTimeout(() => {
-            const municipalities = philippineData[selectedProvince];
-            municipalities.sort().forEach(municipality => {
-                const option = document.createElement('option');
-                option.value = municipality;
-                option.textContent = municipality;
-                municipalitySelect.appendChild(option);
-            });
+        // Clear and disable municipality dropdown
+        municipalitySelect.innerHTML = '<option value="">Select Municipality/City</option>';
+        municipalitySelect.disabled = true;
+        
+        if (selectedProvince) {
+            // Show loading
+            municipalityLoading.classList.add('show');
             
-            // Enable municipality dropdown
-            municipalitySelect.disabled = false;
-            municipalityLoading.classList.remove('show');
-        }, 300);
-    }
-});
+            // Simulate loading delay for better UX
+            setTimeout(() => {
+                const municipalities = philippineData[selectedProvince];
+                municipalities.sort().forEach(municipality => {
+                    const option = document.createElement('option');
+                    option.value = municipality;
+                    option.textContent = municipality;
+                    municipalitySelect.appendChild(option);
+                });
+                
+                // Enable municipality dropdown
+                municipalitySelect.disabled = false;
+                municipalityLoading.classList.remove('show');
+            }, 300);
+        }
+    });
 
-// Form validation
-document.getElementById('registrationForm').addEventListener('submit', function(e) {
-    const province = provinceSelect.value;
-    const municipality = municipalitySelect.value;
-    
-    if (!province || !municipality) {
-        e.preventDefault();
-        alert('Please select both province and municipality/city');
-        return false;
-    }
+    // Form validation
+    document.getElementById('registrationForm').addEventListener('submit', function(e) {
+        const province = provinceSelect.value;
+        const municipality = municipalitySelect.value;
+        
+        if (!province || !municipality) {
+            e.preventDefault();
+            alert('Please select both province and municipality/city');
+            return false;
+        }
+    });
+
+    // Set initial values if form has errors
+    {% if form.province.value %}
+        provinceSelect.value = '{{ form.province.value }}';
+        // Trigger change event to populate municipalities
+        provinceSelect.dispatchEvent(new Event('change'));
+        
+        setTimeout(() => {
+            municipalitySelect.value = '{{ form.municipality.value }}';
+        }, 350);
+    {% endif %}
 });
 </script>
 {% endblock %}
