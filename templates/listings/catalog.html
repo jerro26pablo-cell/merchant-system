@@ -198,7 +198,7 @@
                                                 <i class="bi bi-gavel"></i> Bid
                                             </a>
                                         {% endif %}
-                                        {% if listing.is_buy_now and request.user != listing.seller %}
+                                        {% if listing.is_buy_now and request.user != listing.seller and listing.available_stock > 0 %}
                                             <a href="{% url 'add_to_wishlist' listing.slug %}" class="btn btn-outline-success">
                                                 <i class="bi bi-heart"></i> Add
                                             </a>

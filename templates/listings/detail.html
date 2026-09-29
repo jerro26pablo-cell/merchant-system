@@ -60,29 +60,7 @@ function getCookie(name) {
     return cookieValue;
 }
 
-function showAddToWishlist() {
-    const qty = document.getElementById('quantity').value;
-    const formData = new FormData();
-    formData.append('quantity', qty);
 
-    fetch(`/listings/wishlist/add/{{ listing.slug }}/`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': getCookie('csrftoken')
-        }
-    })
-    .then(response => response.text())
-    .then(data => {
-        // Redirect to wishlist on success
-        window.location.href = '/listings/wishlist/';
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error adding to wishlist');
-    });
-}
 
 document.addEventListener('DOMContentLoaded', function() {
     const qtyInput = document.getElementById('quantity');
@@ -369,12 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p>Available: {{ listing.available_stock }}</p>
 
                         {% if user.is_authenticated %}
-                            <div class="mb-3">
-                                <button type="button" class="btn btn-outline-primary w-100" onclick="showAddToWishlist()">
-                                    <i class="bi bi-heart"></i> Add to Wishlist
-                                </button>
-                            </div>
-                            <form method="POST" action="{% url 'add_to_cart' listing.slug %}">
+                            <form method="POST" action="{% url 'add_to_wishlist' listing.slug %}">
                                 {% csrf_token %}
                                 <div class="row mb-3">
                                     <div class="col-md-6">
@@ -391,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </div>
                                 </div>
                                 <button type="submit" class="btn btn-success btn-lg w-100">
-                                    <i class="bi bi-cart"></i> Buy Now
+                                    <i class="bi bi-heart"></i> Add to Wishlist
                                 </button>
                             </form>
                         {% else %}
