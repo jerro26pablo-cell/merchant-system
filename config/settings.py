@@ -70,19 +70,29 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
 # Database configuration
-# Use SQLite for now due to DATABASE_URL issues with Render
 import logging
 db_logger = logging.getLogger(__name__)
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Use DATABASE_URL if available (Render), otherwise fallback to SQLite for local development
+if os.environ.get('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+    db_logger.info("Using PostgreSQL database from DATABASE_URL")
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+    db_logger.info("Using SQLite database for local development")
 
-db_logger.info("Using SQLite database for deployment")
-db_logger.info(f"Database path: {DATABASES['default']['NAME']}")
+db_logger.info(f"Database ENGINE: {DATABASES['default']['ENGINE']}")
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
