@@ -24,6 +24,17 @@ class ListingForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['category'].queryset = Category.objects.filter(is_active=True)
         self.fields['size'].queryset = SizeSpecification.objects.filter(is_active=True)
+        
+        # Make fields optional by default - they'll be validated in clean()
+        self.fields['available_stock'].required = False
+        self.fields['auction_quantity'].required = False
+        self.fields['minimum_increment'].required = False
+        self.fields['anti_snipe_seconds'].required = False
+        self.fields['starting_bid'].required = False
+        self.fields['reserve_price'].required = False
+        self.fields['buy_now_price'].required = False
+        self.fields['auction_start'].required = False
+        self.fields['auction_end'].required = False
     
     def clean(self):
         cleaned_data = super().clean()
@@ -63,6 +74,17 @@ class ListingForm(forms.ModelForm):
         if quantity is None:
             quantity = 1
             cleaned_data['quantity'] = quantity
+        
+        # Set default values for fields that have them in the model
+        minimum_increment = cleaned_data.get('minimum_increment')
+        if minimum_increment is None:
+            minimum_increment = 1.00
+            cleaned_data['minimum_increment'] = minimum_increment
+        
+        anti_snipe_seconds = cleaned_data.get('anti_snipe_seconds')
+        if anti_snipe_seconds is None:
+            anti_snipe_seconds = 300
+            cleaned_data['anti_snipe_seconds'] = anti_snipe_seconds
         
         # Ensure available_stock has a default value before any comparison
         if available_stock is None:
