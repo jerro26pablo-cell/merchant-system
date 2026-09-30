@@ -301,7 +301,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 {% empty %}
                                     <p class="text-muted">You haven't placed any bids yet.</p>
                                 {% endfor %}
-                            {% endif %}
                     {% elif user.is_authenticated and listing.status == 'active' %}
                         <form id="bidForm" class="bid-form" action="{% url 'place_bid' listing.slug %}" method="POST">
                             {% csrf_token %}
