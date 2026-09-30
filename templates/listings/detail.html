@@ -376,9 +376,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <td>{{ order.quantity }}</td>
                                                 <td>₱{{ order.total_amount }}</td>
                                                 <td>
-                                                    <span class="badge bg-{{ 'success' if order.status == 'delivered' else 'warning' if order.status == 'pending' else 'secondary' }}">
-                                                        {{ order.get_status_display }}
-                                                    </span>
+                                                    {% if order.status == 'delivered' %}
+                                                        <span class="badge bg-success">{{ order.get_status_display }}</span>
+                                                    {% elif order.status == 'pending' %}
+                                                        <span class="badge bg-warning">{{ order.get_status_display }}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">{{ order.get_status_display }}</span>
+                                                    {% endif %}
                                                 </td>
                                             </tr>
                                         {% endfor %}
