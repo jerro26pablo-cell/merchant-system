@@ -42,8 +42,8 @@
 
                                 <div style="margin: 0.25rem 0;">
                                     <span style="padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;
-                                           background: {% if bid.status in 'winning' 'active' %}#dcfce7{% else %}#fee2e2{% endif %};
-                                           color: {% if bid.status in 'winning' 'active' %}#166534{% else %}#991b1b{% endif %};">
+                                           background: {% if bid.status == 'winning' or bid.status == 'active' %}#dcfce7{% else %}#fee2e2{% endif %};
+                                           color: {% if bid.status == 'winning' or bid.status == 'active' %}#166534{% else %}#991b1b{% endif %};">
                                         {{ bid.status|upper }}
                                     </span>
                                     {% if bid.is_auto_bid %}

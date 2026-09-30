@@ -119,10 +119,27 @@ else:
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Use local storage on Render with mounted disk (same as working FastAPI system)
-if 'RENDER' in os.environ:
-    MEDIA_ROOT = Path('/opt/render/project/src/media')
-    MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+# Cloudinary configuration for persistent storage on Render
+# Support both CLOUDINARY_URL and individual credentials
+CLOUDINARY_URL = config('CLOUDINARY_URL', default='')
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
+    'API_KEY': config('CLOUDINARY_API_KEY', default=''),
+    'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
+}
+
+# Use Cloudinary in production, local filesystem in development
+if CLOUDINARY_URL or os.environ.get('CLOUDINARY_CLOUD_NAME'):
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    # Extract cloud name from CLOUDINARY_URL if available
+    if CLOUDINARY_URL:
+        cloud_name = CLOUDINARY_URL.split('@')[-1] if '@' in CLOUDINARY_URL else config('CLOUDINARY_CLOUD_NAME', default='')
+        MEDIA_URL = f'https://res.cloudinary.com/{cloud_name}/image/upload/'
+    else:
+        MEDIA_URL = 'https://res.cloudinary.com/' + config('CLOUDINARY_CLOUD_NAME', default='') + '/image/upload/'
+else:
+    # Local filesystem for development
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

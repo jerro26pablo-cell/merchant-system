@@ -3,8 +3,8 @@ services:
     name: online-merchant
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python manage.py makemigrations && python manage.py migrate --noinput && python manage.py collectstatic --noinput --clear
-    startCommand: uvicorn config.asgi:application --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput --clear
+    startCommand: sh -c "python manage.py migrate --noinput && uvicorn config.asgi:application --host 0.0.0.0 --port $PORT"
     envVars:
       - key: SECRET_KEY
         generateValue: true
@@ -14,9 +14,9 @@ services:
         value: "*.onrender.com"
       - key: PYTHONUNBUFFERED
         value: "1"
-      - key: USE_S3
-        value: "false"
-    disk:
-      name: media-disk
-      mountPath: /opt/render/project/src/media
-      sizeGB: 1
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

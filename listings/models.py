@@ -50,7 +50,7 @@ class Listing(models.Model):
     # Pricing
     starting_bid = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     current_bid = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    buy_now_price = models.DecimalField(max_digits=10, decimal_places=2)
+    buy_now_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     reserve_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     minimum_increment = models.DecimalField(max_digits=10, decimal_places=2, default=1.00)
     display_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -59,6 +59,7 @@ class Listing(models.Model):
     auction_start = models.DateTimeField(null=True, blank=True)
     auction_end = models.DateTimeField(null=True, blank=True)
     anti_snipe_seconds = models.IntegerField(default=300, help_text=_('Seconds to extend auction if bid placed in final seconds'))
+    auto_relist = models.BooleanField(default=False, help_text=_('Automatically relist if not sold'))
     
     # Size
     size = models.ForeignKey(SizeSpecification, on_delete=models.SET_NULL, null=True, blank=True, related_name='listings')
@@ -142,7 +143,7 @@ class Listing(models.Model):
 
 class ListingImage(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='listings/')
+    image = models.ImageField(upload_to='listings/', blank=True, null=True)
     alt_text = models.CharField(max_length=200, blank=True)
     is_primary = models.BooleanField(default=False)
     sort_order = models.IntegerField(default=0)
